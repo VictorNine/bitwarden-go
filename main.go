@@ -164,6 +164,19 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 	w.Write(jdata)
 }
 
+// Interface to make testing easier
+type database interface {
+	init() error
+	addAccount(acc Account) error
+	getAccount(username string) (Account, error)
+	getCiphers(owner string) ([]Cipher, error)
+	newCipher(ciph Cipher, owner string) (Cipher, error)
+	updateCipher(newData Cipher, owner string, ciphID string) error
+	deleteCipher(owner string, ciphID string) error
+	open() error
+	close()
+}
+
 func main() {
 	initDB := flag.Bool("init", false, "Initialize the database")
 	flag.Parse()
