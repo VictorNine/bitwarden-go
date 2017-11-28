@@ -15,7 +15,7 @@ type DB struct {
 }
 
 func (db *DB) init() error {
-	query1 := "CREATE TABLE \"accounts\" ( `id` INTEGER, `name` TEXT, `email` TEXT UNIQUE, `masterPasswordHash` NUMERIC, `masterPasswordHint` TEXT, `key` TEXT, PRIMARY KEY(id) );"
+	query1 := "CREATE TABLE \"accounts\" ( `id` INTEGER, `name` TEXT, `email` TEXT UNIQUE, `masterPasswordHash` NUMERIC, `masterPasswordHint` TEXT, `key` TEXT, 'refreshtoken' TEXT, PRIMARY KEY(id) );"
 	query2 := "CREATE TABLE \"ciphers\" ( `id` INTEGER PRIMARY KEY AUTOINCREMENT, `type` INTEGER, `revisiondate` INTEGER, `data` BLOB, `owner` INTEGER );"
 	stmt1, err := db.db.Prepare(query1)
 	if err != nil {
@@ -177,12 +177,12 @@ func (db *DB) deleteCipher(owner string, ciphID string) error {
 }
 
 func (db *DB) addAccount(acc Account) error {
-	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key) values(?,?,?,?,?)")
+	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key, refreshtoken) values(?,?,?,?,?, ?)")
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key)
+	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key, "")
 	if err != nil {
 		return err
 	}
@@ -190,13 +190,39 @@ func (db *DB) addAccount(acc Account) error {
 	return nil
 }
 
-func (db *DB) getAccount(username string) (Account, error) {
+func (db *DB) updateAccountInfo(sid string, refreshToken string) error {
+	id, err := strconv.ParseInt(sid, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	stmt, err := db.db.Prepare("UPDATE accounts SET refreshtoken=$1 WHERE id=$2")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(refreshToken, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *DB) getAccount(username string, refreshtoken string) (Account, error) {
+	var row *sql.Row
 	acc := Account{}
-	query := "SELECT * FROM accounts WHERE email = $1"
-	row := db.db.QueryRow(query, username)
+	if username != "" {
+		query := "SELECT * FROM accounts WHERE email = $1"
+		row = db.db.QueryRow(query, username)
+	}
+	if refreshtoken != "" {
+		query := "SELECT * FROM accounts WHERE refreshtoken = $1"
+		row = db.db.QueryRow(query, refreshtoken)
+	}
 
 	var iid int
-	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key)
+	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key, &acc.RefreshToken)
 	if err != nil {
 		return acc, err
 	}

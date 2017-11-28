@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -31,6 +33,18 @@ func handleRegister(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte{0x00})
 }
 
+func createRefreshToken() string {
+	token := make([]byte, 32)
+	_, err := rand.Read(token)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tokenStr := b64.StdEncoding.EncodeToString(token)
+
+	return tokenStr
+}
+
 type resToken struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int    `json:"expires_in"`
@@ -49,23 +63,47 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var acc Account
+	var err error
 	if grantType[0] == "refresh_token" {
-		log.Println("Trying to refresh token, not implemented")
-		w.Write([]byte("error"))
-		return // Not implemented just return
+		rrefreshToken := req.PostForm["refresh_token"][0]
+		if len(rrefreshToken) < 4 {
+			// Fatal to always catch this
+			log.Fatal("fake refreshToken " + rrefreshToken)
+		}
+
+		acc, err = db.getAccount("", rrefreshToken)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println(acc.Email + " is trying to refresh a token " + rrefreshToken)
+		if acc.RefreshToken != rrefreshToken {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(http.StatusText(401)))
+			log.Println("Login attempt failed")
+			return
+		}
+	} else {
+		// Login with username
+		username := req.PostForm["username"][0]
+		passwordHash := req.PostForm["password"][0]
+
+		log.Println(username + " is trying to login")
+
+		acc, err = db.getAccount(username, "")
+		if acc.MasterPasswordHash != passwordHash {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(http.StatusText(401)))
+			log.Println("Login attempt failed")
+			return
+		}
 	}
 
-	username := req.PostForm["username"][0]
-	passwordHash := req.PostForm["password"][0]
-
-	log.Println(username + " is trying to login")
-
-	acc, err := db.getAccount(username)
-	if acc.MasterPasswordHash != passwordHash {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(http.StatusText(401)))
-		log.Println("Login attempt failed")
-		return
+	// Create refreshtoken and store in db
+	refreshToken := createRefreshToken()
+	err = db.updateAccountInfo(acc.Id, refreshToken)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	// Create the token
@@ -83,7 +121,7 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 	rtoken := resToken{AccessToken: tokenString,
 		ExpiresIn:    jwtExpire,
 		TokenType:    "Bearer",
-		RefreshToken: "NA",
+		RefreshToken: refreshToken,
 		Key:          acc.Key,
 	}
 

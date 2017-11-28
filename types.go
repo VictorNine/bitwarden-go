@@ -13,6 +13,7 @@ type Account struct {
 	MasterPasswordHash string `json:"masterPasswordHash"`
 	MasterPasswordHint string `json:"masterPasswordHint"`
 	Key                string `json:"key"`
+	RefreshToken       string `json:"-"`
 }
 
 // The data we store and send to the client
