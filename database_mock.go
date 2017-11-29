@@ -52,3 +52,7 @@ func (db *mockDB) getAccount(username string, refreshtoken string) (Account, err
 func (db *mockDB) addFolder(name string, owner string) (Folder, error) {
 	return Folder{}, nil
 }
+
+func (db *mockDB) getFolders(owner string) ([]Folder, error) {
+	return nil, nil
+}

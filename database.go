@@ -253,7 +253,7 @@ func (db *DB) addFolder(name string, owner string) (Folder, error) {
 		Id:           uuid.NewV4().String(),
 		Name:         name,
 		Object:       "folder",
-		RevisionData: time.Now(),
+		RevisionDate: time.Now(),
 	}
 
 	stmt, err := db.db.Prepare("INSERT INTO folders(id, name, revisiondate, owner) values(?,?,?, ?)")
@@ -261,10 +261,41 @@ func (db *DB) addFolder(name string, owner string) (Folder, error) {
 		return Folder{}, err
 	}
 
-	_, err = stmt.Exec(folder.Id, folder.Name, folder.RevisionData, iowner)
+	_, err = stmt.Exec(folder.Id, folder.Name, folder.RevisionDate.Unix(), iowner)
 	if err != nil {
 		return Folder{}, err
 	}
 
 	return folder, nil
+}
+
+func (db *DB) getFolders(owner string) ([]Folder, error) {
+	iowner, err := strconv.ParseInt(owner, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	var folders []Folder
+	query := "SELECT id, name, revisiondate FROM folders WHERE owner = $1"
+	rows, err := db.db.Query(query, iowner)
+	if err != nil {
+		return nil, err
+	}
+
+	var revDate int64
+	for rows.Next() {
+		f := Folder{}
+		err := rows.Scan(&f.Id, &f.Name, &revDate)
+		if err != nil {
+			return nil, err
+		}
+		f.RevisionDate = time.Unix(revDate, 0)
+
+		folders = append(folders, f)
+	}
+
+	if len(folders) < 1 {
+		folders = make([]Folder, 0) // Make an empty slice if there are none or android app will crash
+	}
+	return folders, err
 }

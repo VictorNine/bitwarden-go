@@ -140,6 +140,11 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 		log.Println(err)
 	}
 
+	folders, err := db.getFolders(acc.Id)
+	if err != nil {
+		log.Println(err)
+	}
+
 	Domains := Domains{
 		EquivalentDomains: nil,
 		GlobalEquivalentDomains: []GlobalEquivalentDomains{
@@ -149,7 +154,7 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 
 	data := SyncData{
 		Profile: prof,
-		Folders: make([]string, 0), // Needed or the android app will crash
+		Folders: folders,
 		Domains: Domains,
 		Object:  "sync",
 		Ciphers: ciphs,
@@ -213,6 +218,7 @@ type database interface {
 	open() error
 	close()
 	addFolder(name string, owner string) (Folder, error)
+	getFolders(owner string) ([]Folder, error)
 }
 
 func main() {

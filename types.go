@@ -100,7 +100,7 @@ type Profile struct {
 
 type SyncData struct {
 	Profile Profile
-	Folders []string
+	Folders []Folder
 	Ciphers []Cipher
 	Domains Domains
 	Object  string
@@ -121,5 +121,5 @@ type Folder struct {
 	Id           string
 	Name         string
 	Object       string
-	RevisionData time.Time
+	RevisionDate time.Time
 }
