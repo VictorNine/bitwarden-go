@@ -8,6 +8,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	uuid "github.com/satori/go.uuid"
 )
 
 type DB struct {
@@ -17,6 +18,7 @@ type DB struct {
 func (db *DB) init() error {
 	query1 := "CREATE TABLE \"accounts\" ( `id` INTEGER, `name` TEXT, `email` TEXT UNIQUE, `masterPasswordHash` NUMERIC, `masterPasswordHint` TEXT, `key` TEXT, 'refreshtoken' TEXT, PRIMARY KEY(id) );"
 	query2 := "CREATE TABLE \"ciphers\" ( `id` INTEGER PRIMARY KEY AUTOINCREMENT, `type` INTEGER, `revisiondate` INTEGER, `data` BLOB, `owner` INTEGER );"
+	query3 := "CREATE TABLE \"folders\" (`id`	TEXT,	`name`	TEXT,	`revisiondate`	INTEGER,	`owner`	INTEGER, PRIMARY KEY(id))"
 	stmt1, err := db.db.Prepare(query1)
 	if err != nil {
 		return err
@@ -33,6 +35,16 @@ func (db *DB) init() error {
 	}
 
 	_, err = stmt2.Exec()
+	if err != nil {
+		return err
+	}
+
+	stmt3, err := db.db.Prepare(query3)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt3.Exec()
 	if err != nil {
 		return err
 	}
@@ -229,4 +241,30 @@ func (db *DB) getAccount(username string, refreshtoken string) (Account, error) 
 	acc.Id = strconv.Itoa(iid)
 
 	return acc, nil
+}
+
+func (db *DB) addFolder(name string, owner string) (Folder, error) {
+	iowner, err := strconv.ParseInt(owner, 10, 64)
+	if err != nil {
+		return Folder{}, err
+	}
+
+	folder := Folder{
+		Id:           uuid.NewV4().String(),
+		Name:         name,
+		Object:       "folder",
+		RevisionData: time.Now(),
+	}
+
+	stmt, err := db.db.Prepare("INSERT INTO folders(id, name, revisiondate, owner) values(?,?,?, ?)")
+	if err != nil {
+		return Folder{}, err
+	}
+
+	_, err = stmt.Exec(folder.Id, folder.Name, folder.RevisionData, iowner)
+	if err != nil {
+		return Folder{}, err
+	}
+
+	return folder, nil
 }

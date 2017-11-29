@@ -164,6 +164,42 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 	w.Write(jdata)
 }
 
+func handleNewFolder(w http.ResponseWriter, req *http.Request) {
+	email := req.Context().Value(ctxKey("email")).(string)
+
+	log.Println(email + " is trying to add a new folder")
+
+	acc, err := db.getAccount(email, "")
+	if err != nil {
+		log.Fatal("Account lookup " + err.Error())
+	}
+
+	decoder := json.NewDecoder(req.Body)
+
+	var folderData struct {
+		Name string `json:"name"`
+	}
+
+	err = decoder.Decode(&folderData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer req.Body.Close()
+
+	folder, err := db.addFolder(folderData.Name, acc.Id)
+	if err != nil {
+		log.Fatal("newFolder error" + err.Error())
+	}
+
+	data, err := json.Marshal(&folder)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
 // Interface to make testing easier
 type database interface {
 	init() error
@@ -176,6 +212,7 @@ type database interface {
 	deleteCipher(owner string, ciphID string) error
 	open() error
 	close()
+	addFolder(name string, owner string) (Folder, error)
 }
 
 func main() {
@@ -200,6 +237,8 @@ func main() {
 	http.HandleFunc("/api/accounts/register", handleRegister)
 	http.HandleFunc("/identity/connect/token", handleLogin)
 
+	http.Handle("/api/folders", jwtMiddleware(http.HandlerFunc(handleNewFolder)))
+	http.Handle("/apifolders", jwtMiddleware(http.HandlerFunc(handleNewFolder))) // The android app want's the address like this, will be fixed in the next version. Issue #174
 	http.Handle("/api/sync", jwtMiddleware(http.HandlerFunc(handleSync)))
 
 	http.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(handleNewCipher)))

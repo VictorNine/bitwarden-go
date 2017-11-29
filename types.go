@@ -116,3 +116,10 @@ type GlobalEquivalentDomains struct {
 	Domains  []string
 	Excluded bool
 }
+
+type Folder struct {
+	Id           string
+	Name         string
+	Object       string
+	RevisionData time.Time
+}
