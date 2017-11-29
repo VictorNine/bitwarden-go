@@ -246,8 +246,6 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/accounts/register", handleRegister)
-	// TODO /api/accounts/keys ?
-	// TODO /api/accounts/profile ?
 	mux.HandleFunc("/identity/connect/token", handleLogin)
 
 	mux.Handle("/api/folders", jwtMiddleware(http.HandlerFunc(handleNewFolder)))
