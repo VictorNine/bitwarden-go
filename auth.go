@@ -28,6 +28,26 @@ func reHashPassword(key, salt string) (string, error) {
 	return base64.StdEncoding.EncodeToString(hash), nil
 }
 
+func handleKeysUpdate(w http.ResponseWriter, req *http.Request) {
+
+}
+
+func handleProfile(w http.ResponseWriter, req *http.Request) {
+	email := req.Context().Value(ctxKey("email")).(string)
+	acc, err := db.getAccount(email)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	data, err := json.Marshal(&acc)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
 func handleRegister(w http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
 	var acc Account
@@ -72,7 +92,8 @@ type resToken struct {
 	ExpiresIn    int    `json:"expires_in"`
 	TokenType    string `json:"token_type"`
 	RefreshToken string `json:"refresh_token"`
-	Key          string `json:"key"`
+	Key          string `json:"Key"`
+	PrivateKey   string `json:"PrivateKey"`
 }
 
 func handleLogin(w http.ResponseWriter, req *http.Request) {
@@ -92,13 +113,18 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		rt := strings.Split(rrefreshToken, ":")
 		if len(rt) != 2 {
 			// Fatal to always catch this
-			log.Fatal("fake refreshToken " + rrefreshToken)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(http.StatusText(401)))
+			log.Println("fake refreshToken " + rrefreshToken)
+			return
 		}
 
 		acc, err = db.getAccount(rt[0])
 		if err != nil {
-			log.Println("account not found")
-			log.Fatal(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(http.StatusText(401)))
+			log.Println("Account not found")
+			return
 		}
 		log.Println(acc.Email + " is trying to refresh a token " + rt[1])
 		if acc.RefreshToken != rt[1] {
@@ -153,6 +179,7 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		TokenType:    "Bearer",
 		RefreshToken: acc.RefreshToken,
 		Key:          acc.Key,
+		PrivateKey:   acc.Keys.EncryptedPrivateKey,
 	}
 
 	data, err := json.Marshal(&rtoken)
