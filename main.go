@@ -5,6 +5,8 @@ import (
 	"flag"
 	"log"
 	"net/http"
+
+	"github.com/rs/cors"
 )
 
 // The data we get from the client. Only used to parse data
@@ -146,6 +148,7 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 	}
 
 	Domains := Domains{
+		Object:            "domains",
 		EquivalentDomains: nil,
 		GlobalEquivalentDomains: []GlobalEquivalentDomains{
 			GlobalEquivalentDomains{Type: 1, Domains: []string{"youtube.com", "google.com", "gmail.com"}, Excluded: false},
@@ -240,16 +243,26 @@ func main() {
 		}
 	}
 
-	http.HandleFunc("/api/accounts/register", handleRegister)
-	http.HandleFunc("/identity/connect/token", handleLogin)
+	mux := http.NewServeMux()
 
-	http.Handle("/api/folders", jwtMiddleware(http.HandlerFunc(handleNewFolder)))
-	http.Handle("/apifolders", jwtMiddleware(http.HandlerFunc(handleNewFolder))) // The android app want's the address like this, will be fixed in the next version. Issue #174
-	http.Handle("/api/sync", jwtMiddleware(http.HandlerFunc(handleSync)))
+	mux.HandleFunc("/api/accounts/register", handleRegister)
+	// TODO /api/accounts/keys ?
+	// TODO /api/accounts/profile ?
+	mux.HandleFunc("/identity/connect/token", handleLogin)
 
-	http.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(handleNewCipher)))
-	http.Handle("/api/ciphers/", jwtMiddleware(http.HandlerFunc(handleCipherUpdate)))
+	mux.Handle("/api/folders", jwtMiddleware(http.HandlerFunc(handleNewFolder)))
+	mux.Handle("/apifolders", jwtMiddleware(http.HandlerFunc(handleNewFolder))) // The android app want's the address like this, will be fixed in the next version. Issue #174
+	mux.Handle("/api/sync", jwtMiddleware(http.HandlerFunc(handleSync)))
+
+	mux.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(handleNewCipher)))
+	mux.Handle("/api/ciphers/", jwtMiddleware(http.HandlerFunc(handleCipherUpdate)))
 
 	log.Println("Starting server on " + serverAddr)
-	http.ListenAndServe(serverAddr, nil)
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"Authorization"},
+		Debug:            true,
+	}).Handler(mux)
+	http.ListenAndServe(serverAddr, handler)
 }
