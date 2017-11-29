@@ -201,8 +201,8 @@ func (db *DB) addAccount(acc Account) error {
 	return nil
 }
 
-func (db *DB) updateAccountInfo(sid string, refreshToken string) error {
-	id, err := strconv.ParseInt(sid, 10, 64)
+func (db *DB) updateAccountInfo(acc Account) error {
+	id, err := strconv.ParseInt(acc.Id, 10, 64)
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func (db *DB) updateAccountInfo(sid string, refreshToken string) error {
 		return err
 	}
 
-	_, err = stmt.Exec(refreshToken, id)
+	_, err = stmt.Exec(acc.RefreshToken, id)
 	if err != nil {
 		return err
 	}
@@ -220,16 +220,12 @@ func (db *DB) updateAccountInfo(sid string, refreshToken string) error {
 	return nil
 }
 
-func (db *DB) getAccount(username string, refreshtoken string) (Account, error) {
+func (db *DB) getAccount(username string) (Account, error) {
 	var row *sql.Row
 	acc := Account{}
 	if username != "" {
 		query := "SELECT * FROM accounts WHERE email = $1"
 		row = db.db.QueryRow(query, username)
-	}
-	if refreshtoken != "" {
-		query := "SELECT * FROM accounts WHERE refreshtoken = $1"
-		row = db.db.QueryRow(query, refreshtoken)
 	}
 
 	var iid int

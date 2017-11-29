@@ -14,9 +14,9 @@ func TestHandleLogin(t *testing.T) {
 		data     url.Values
 		expected int
 	}{{url.Values{"grant_type": {"password"}, "username": {"nobody@example.com"}, "password": {"base64password"}}, 200},
-		{url.Values{"grant_type": {"refresh_token"}, "refresh_token": {"abcdef"}}, 200},
+		{url.Values{"grant_type": {"refresh_token"}, "refresh_token": {"1:abcdef"}}, 200},
 		{url.Values{"grant_type": {"password"}, "username": {"nobody@example.com"}, "password": {""}}, 401},
-		{url.Values{"grant_type": {"refresh_token"}, "refresh_token": {"nasdfasdf"}}, 401}}
+		{url.Values{"grant_type": {"refresh_token"}, "refresh_token": {"1:nasdfasdf"}}, 401}}
 
 	db = &mockDB{username: "nobody@example.com", password: "base64password", refreshToken: "abcdef"}
 
