@@ -109,6 +109,7 @@ type SyncData struct {
 type Domains struct {
 	EquivalentDomains       []string
 	GlobalEquivalentDomains []GlobalEquivalentDomains
+	Object                  string
 }
 
 type GlobalEquivalentDomains struct {
