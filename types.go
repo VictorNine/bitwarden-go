@@ -70,6 +70,10 @@ func unmarshalCipher(data io.ReadCloser) (Cipher, error) {
 
 	(*cdata.Notes) = nciph.Notes
 
+	if *cdata.Notes == "" {
+		cdata.Notes = nil
+	}
+
 	ciph := Cipher{ // Only including the data we use when we store it
 		Type: nciph.Type,
 		Data: cdata,

@@ -76,12 +76,11 @@ func (db *DB) getCiphers(owner string) ([]Cipher, error) {
 			return nil, err
 		}
 		err = json.Unmarshal(blob, &ciph.Data)
+		if err != nil {
+			return nil, err
+		}
 		ciph.Id = strconv.Itoa(iid)
 		ciph.RevisionDate = time.Unix(revDate, 0)
-
-		if *ciph.Data.Notes == "" {
-			ciph.Data.Notes = nil
-		}
 
 		ciphers = append(ciphers, ciph)
 	}
