@@ -130,3 +130,8 @@ type Folder struct {
 	Object       string
 	RevisionDate time.Time
 }
+
+type Data struct {
+	Object string
+	Data   interface{}
+}

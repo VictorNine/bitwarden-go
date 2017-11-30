@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/rs/cors"
+	"strings"
 )
 
 // The data we get from the client. Only used to parse data
@@ -27,7 +28,18 @@ type loginData struct {
 	ToTp     string `json:"totp"`
 }
 
-func handleNewCipher(w http.ResponseWriter, req *http.Request) {
+func handleCollections(w http.ResponseWriter, req *http.Request) {
+
+	collections := Data{Object: "list", Data: []string{}}
+	data, err := json.Marshal(collections)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func handleCipher(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 
 	log.Println(email + " is trying to add data")
@@ -37,20 +49,34 @@ func handleNewCipher(w http.ResponseWriter, req *http.Request) {
 		log.Fatal("Account lookup " + err.Error())
 	}
 
-	rCiph, err := unmarshalCipher(req.Body)
-	if err != nil {
-		log.Fatal("Cipher decode error" + err.Error())
-	}
+	var data []byte
 
-	// Store the new cipher object in db
-	newCiph, err := db.newCipher(rCiph, acc.Id)
-	if err != nil {
-		log.Fatal("newCipher error" + err.Error())
-	}
+	if req.Method == "POST" {
+		rCiph, err := unmarshalCipher(req.Body)
+		if err != nil {
+			log.Fatal("Cipher decode error" + err.Error())
+		}
 
-	data, err := json.Marshal(&newCiph)
-	if err != nil {
-		log.Fatal(err)
+		// Store the new cipher object in db
+		newCiph, err := db.newCipher(rCiph, acc.Id)
+		if err != nil {
+			log.Fatal("newCipher error" + err.Error())
+		}
+		data, err = json.Marshal(&newCiph)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		ciphs, err := db.getCiphers(acc.Id)
+		if err != nil {
+			log.Println(err)
+		}
+		list := Data{Object: "list", Data: ciphs}
+		data, err = json.Marshal(&list)
+		if err != nil {
+			log.Fatal("UAAH")
+			log.Fatal(err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -63,7 +89,7 @@ func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 	log.Println(email + " is trying to edit his data")
 
 	// Get the cipher id
-	id := req.URL.Path[len("/api/ciphers/"):]
+	id := strings.TrimPrefix(req.URL.Path, "/api/ciphers/")
 
 	acc, err := db.getAccount(email)
 	if err != nil {
@@ -71,6 +97,39 @@ func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 	}
 
 	switch req.Method {
+	case "GET":
+		log.Println("GET Ciphers for " + acc.Id)
+		var data []byte
+		ciph, err := db.getCipher(acc.Id, id)
+		if err != nil {
+			log.Println(err)
+		}
+		data, err = json.Marshal(&ciph)
+		if err != nil {
+			log.Fatal("UAAH")
+			log.Fatal(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	case "POST":
+		log.Println("POST Ciphers")
+		var data []byte
+		rCiph, err := unmarshalCipher(req.Body)
+		if err != nil {
+			log.Fatal("Cipher decode error" + err.Error())
+		}
+
+		// Store the new cipher object in db
+		newCiph, err := db.newCipher(rCiph, acc.Id)
+		if err != nil {
+			log.Fatal("newCipher error" + err.Error())
+		}
+		data, err = json.Marshal(&newCiph)
+		if err != nil {
+			log.Fatal(err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
 	case "PUT":
 		rCiph, err := unmarshalCipher(req.Body)
 		if err != nil {
@@ -172,7 +231,7 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 	w.Write(jdata)
 }
 
-func handleNewFolder(w http.ResponseWriter, req *http.Request) {
+func handleFolder(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 
 	log.Println(email + " is trying to add a new folder")
@@ -182,26 +241,39 @@ func handleNewFolder(w http.ResponseWriter, req *http.Request) {
 		log.Fatal("Account lookup " + err.Error())
 	}
 
-	decoder := json.NewDecoder(req.Body)
+	var data []byte
+	if req.Method == "POST" {
+		decoder := json.NewDecoder(req.Body)
 
-	var folderData struct {
-		Name string `json:"name"`
-	}
+		var folderData struct {
+			Name string `json:"name"`
+		}
 
-	err = decoder.Decode(&folderData)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer req.Body.Close()
+		err = decoder.Decode(&folderData)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer req.Body.Close()
 
-	folder, err := db.addFolder(folderData.Name, acc.Id)
-	if err != nil {
-		log.Fatal("newFolder error" + err.Error())
-	}
+		folder, err := db.addFolder(folderData.Name, acc.Id)
+		if err != nil {
+			log.Fatal("newFolder error" + err.Error())
+		}
 
-	data, err := json.Marshal(&folder)
-	if err != nil {
-		log.Fatal(err)
+		data, err = json.Marshal(&folder)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		folders, err := db.getFolders(acc.Id)
+		if err != nil {
+			log.Println(err)
+		}
+		list := Data{Object: "list", Data: folders}
+		data, err = json.Marshal(list)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -214,6 +286,7 @@ type database interface {
 	addAccount(acc Account) error
 	getAccount(username string) (Account, error)
 	updateAccountInfo(acc Account) error
+	getCipher(owner string, ciphID string) (Cipher, error)
 	getCiphers(owner string) ([]Cipher, error)
 	newCipher(ciph Cipher, owner string) (Cipher, error)
 	updateCipher(newData Cipher, owner string, ciphID string) error
@@ -248,19 +321,23 @@ func main() {
 	mux.HandleFunc("/api/accounts/register", handleRegister)
 	mux.HandleFunc("/identity/connect/token", handleLogin)
 
-	mux.Handle("/api/folders", jwtMiddleware(http.HandlerFunc(handleNewFolder)))
-	mux.Handle("/apifolders", jwtMiddleware(http.HandlerFunc(handleNewFolder))) // The android app want's the address like this, will be fixed in the next version. Issue #174
+	mux.Handle("/api/accounts/keys", jwtMiddleware(http.HandlerFunc(handleKeysUpdate)))
+	mux.Handle("/api/accounts/profile", jwtMiddleware(http.HandlerFunc(handleProfile)))
+	mux.Handle("/api/collections", jwtMiddleware(http.HandlerFunc(handleCollections)))
+	mux.Handle("/api/folders", jwtMiddleware(http.HandlerFunc(handleFolder)))
+	mux.Handle("/apifolders", jwtMiddleware(http.HandlerFunc(handleFolder))) // The android app want's the address like this, will be fixed in the next version. Issue #174
 	mux.Handle("/api/sync", jwtMiddleware(http.HandlerFunc(handleSync)))
 
-	mux.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(handleNewCipher)))
+	mux.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(handleCipher)))
 	mux.Handle("/api/ciphers/", jwtMiddleware(http.HandlerFunc(handleCipherUpdate)))
+
+	//mux.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(handleCipher)))
 
 	log.Println("Starting server on " + serverAddr)
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"Authorization"},
-		Debug:            true,
 	}).Handler(mux)
 	http.ListenAndServe(serverAddr, handler)
 }
