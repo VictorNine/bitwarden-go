@@ -12,7 +12,7 @@ type Keys struct {
 }
 
 type Account struct {
-	Id                 string `json:"-"`
+	Id                 string `json:"id"`
 	Name               string `json:"name"`
 	Email              string `json:"email"`
 	MasterPasswordHash string `json:"masterPasswordHash"`
