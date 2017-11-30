@@ -3,7 +3,8 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	b64 "encoding/base64"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,8 +12,21 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/pbkdf2"
+
 	jwt "github.com/dgrijalva/jwt-go"
 )
+
+func reHashPassword(key, salt string) (string, error) {
+	b, err := base64.StdEncoding.DecodeString(key)
+	if err != nil {
+		return "", err
+	}
+
+	hash := pbkdf2.Key(b, []byte(salt), 5000, 256/8, sha256.New)
+
+	return base64.StdEncoding.EncodeToString(hash), nil
+}
 
 func handleRegister(w http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
@@ -24,6 +38,14 @@ func handleRegister(w http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	log.Println(acc.Email + " is trying to register")
+
+	acc.MasterPasswordHash, err = reHashPassword(acc.MasterPasswordHash, acc.Email)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(500)))
+		log.Println(err)
+		return
+	}
 
 	err = db.addAccount(acc)
 	if err != nil {
@@ -40,7 +62,7 @@ func createRefreshToken() string {
 		log.Fatal(err)
 	}
 
-	tokenStr := b64.StdEncoding.EncodeToString(token)
+	tokenStr := base64.StdEncoding.EncodeToString(token)
 
 	return tokenStr
 }
@@ -91,7 +113,13 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		log.Println(username + " is trying to login")
 
 		acc, err = db.getAccount(username, "")
-		if acc.MasterPasswordHash != passwordHash {
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		reHash, _ := reHashPassword(passwordHash, acc.Email)
+
+		if acc.MasterPasswordHash != reHash {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))
 			log.Println("Login attempt failed")
