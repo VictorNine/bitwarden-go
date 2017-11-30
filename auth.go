@@ -198,6 +198,10 @@ func jwtMiddleware(next http.Handler) http.Handler {
 		var tokenString string
 
 		tokens, ok := req.Header["Authorization"]
+		if ! ok {
+			// hack in web-app to use Content-Language
+			tokens, ok = req.Header["Content-Language"]
+		}
 		if ok && len(tokens) >= 1 {
 			tokenString = tokens[0]
 			tokenString = strings.TrimPrefix(tokenString, "Bearer ")
