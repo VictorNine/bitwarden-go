@@ -55,7 +55,7 @@ func handleRegister(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte{0x00})
 }
 
-func createRefreshToken() string {
+func createRefreshToken(id string) string {
 	token := make([]byte, 32)
 	_, err := rand.Read(token)
 	if err != nil {
@@ -64,7 +64,7 @@ func createRefreshToken() string {
 
 	tokenStr := base64.StdEncoding.EncodeToString(token)
 
-	return tokenStr
+	return id + ":" + tokenStr
 }
 
 type resToken struct {
@@ -89,17 +89,19 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 	var err error
 	if grantType[0] == "refresh_token" {
 		rrefreshToken := req.PostForm["refresh_token"][0]
-		if len(rrefreshToken) < 4 {
+		rt := strings.Split(rrefreshToken, ":")
+		if len(rt) != 2 {
 			// Fatal to always catch this
 			log.Fatal("fake refreshToken " + rrefreshToken)
 		}
 
-		acc, err = db.getAccount("", rrefreshToken)
+		acc, err = db.getAccount(rt[0])
 		if err != nil {
+			log.Println("account not found")
 			log.Fatal(err)
 		}
-		log.Println(acc.Email + " is trying to refresh a token " + rrefreshToken)
-		if acc.RefreshToken != rrefreshToken {
+		log.Println(acc.Email + " is trying to refresh a token " + rt[1])
+		if acc.RefreshToken != rt[1] {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))
 			log.Println("Login attempt failed")
@@ -112,7 +114,7 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 
 		log.Println(username + " is trying to login")
 
-		acc, err = db.getAccount(username, "")
+		acc, err = db.getAccount(username)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -128,8 +130,8 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// Create refreshtoken and store in db
-	refreshToken := createRefreshToken()
-	err = db.updateAccountInfo(acc.Id, refreshToken)
+	acc.RefreshToken = createRefreshToken(acc.Id)
+	err = db.updateAccountInfo(acc)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,7 +151,7 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 	rtoken := resToken{AccessToken: tokenString,
 		ExpiresIn:    jwtExpire,
 		TokenType:    "Bearer",
-		RefreshToken: refreshToken,
+		RefreshToken: acc.RefreshToken,
 		Key:          acc.Key,
 	}
 

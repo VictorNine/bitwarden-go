@@ -20,7 +20,7 @@ func (db *mockDB) open() error {
 func (db *mockDB) close() {
 }
 
-func (db *mockDB) updateAccountInfo(sid string, refreshToken string) error {
+func (db *mockDB) updateAccountInfo(acc Account) error {
 	return nil
 }
 
@@ -45,7 +45,7 @@ func (db *mockDB) addAccount(acc Account) error {
 	return nil
 }
 
-func (db *mockDB) getAccount(username string, refreshtoken string) (Account, error) {
+func (db *mockDB) getAccount(username string) (Account, error) {
 	return Account{Email: db.username, MasterPasswordHash: db.password, RefreshToken: db.refreshToken}, nil
 }
 
