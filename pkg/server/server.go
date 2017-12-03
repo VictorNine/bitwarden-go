@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/json"
@@ -224,7 +224,7 @@ type database interface {
 	getFolders(owner string) ([]Folder, error)
 }
 
-func main() {
+func Start() {
 	initDB := flag.Bool("init", false, "Initialize the database")
 	flag.Parse()
 
