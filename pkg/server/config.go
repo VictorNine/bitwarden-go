@@ -1,4 +1,4 @@
-package main
+package server
 
 var mySigningKey = []byte("secret")
 var jwtExpire = 3600
