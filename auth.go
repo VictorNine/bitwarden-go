@@ -34,6 +34,8 @@ func handleKeysUpdate(w http.ResponseWriter, req *http.Request) {
 
 func handleProfile(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
+	log.Println("Profile requested")
+
 	acc, err := db.getAccount(email)
 	if err != nil {
 		log.Fatal(err)
@@ -92,8 +94,13 @@ type resToken struct {
 	ExpiresIn    int    `json:"expires_in"`
 	TokenType    string `json:"token_type"`
 	RefreshToken string `json:"refresh_token"`
-	Key          string `json:"Key"`
-	PrivateKey   string `json:"PrivateKey"`
+	Key          string `json:"key"`
+}
+
+// PrivateKey is needed by the web vault. But android will crash if it's included
+type resTokenWPK struct {
+	resToken
+	PrivateKey string `json:"PrivateKey"`
 }
 
 func handleLogin(w http.ResponseWriter, req *http.Request) {
@@ -105,6 +112,8 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		log.Println("Login without grant_type")
 		return
 	}
+
+	clientID := req.PostForm["client_id"][0]
 
 	var acc Account
 	var err error
@@ -179,12 +188,24 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		TokenType:    "Bearer",
 		RefreshToken: acc.RefreshToken,
 		Key:          acc.Key,
-		PrivateKey:   acc.Keys.EncryptedPrivateKey,
 	}
 
-	data, err := json.Marshal(&rtoken)
-	if err != nil {
-		log.Fatal(err)
+	var data []byte
+	// Login from web vault add priv key
+	if clientID == "web" {
+		// temporary priv key to make tesing easier
+		tempPrivKey := "0.2o2tRZZ4twUsLId6tNU+eQ==|54SMNoQC4DdvJOpeG3uQHjAGtpy1H0DlXKFB+W6o1woA7EVp5TAb9d+4N3SoNyF/9nNdhVHmkIVIgjRpN8Wq0Gzb7TqqVwXbO7E7Gt73YZK+UMS9afyqpiNAGnSsyf/7R8KkbHov3PasFTOy9U75OLoeCzNkL0RlCtDlbblNZFGmE6MZtgCTTgGGrVGP82K6o3AZVpkvf+Y83IO9v1B8prqsNYlB8w8JRJ7fYV0yHrnbPfRzDsC9IcNtlXOs8+0omrgUUWiXQdDdhRkT1yHinSCeZNLc6JufJubOoROlux3DLMSpAu+Xgs8y3WThikIIZu/Oh60n9CEJrRJ/T79cKjPbFJhWlAaInliA2BT+yK1LFwgZoozgQ/ppX8vapt8yC6Cia66krZPE57N6WPeqnGwXXrT4L/SKA53Kcdknx3vEERebF5wton6eSejzMJSDye2hmqB8RXYelhYmHEFlcjNRUkDUplUBhQLMHXecZvh8/S6LBbyucy7R4QG1Z/EBVCtodpnerkt4STPS5nOLAUwxYv5HGkue8gIbl7ARXln+kGYlvV2HwnZefqOu+/44S3ELy5jIDlnCvgvk8A1voy7MhbdLCFPYUs+XnPPftiBw757GdsEfXAUku97qSvgy6Sd0uundfukEfBjH0Wrovi8POcaV61C+bvrSM7FYy30M8riEaH/9SfeWqVfciCSsU9mpSQ39RyoPwik89O1vfjjbsJMUp3HrZzkJmvr7rcm83Pc4/3ITyvEkLN3aYdEAgL/QIOGW8sSWxfotG+DtdEMULBi2qvX73XzMK893uqGR1CMtB/KcdDmlPpCEPYtGB6P2380fnyxLHD6EXtNHhl9v0ZWlwoFtUo+RNcn0XkXB0yVOLzQDAM2Ovxs1JHD/AxQRAnh/RaYm0miWQe6wgfIcavZodqLdhDf4lMXdpPRGL5YfOXua4z50ul0fl3erz3pv8T2YnP0uHHJVf0VLmzlL57jRCBHRldXSfbtYOXOlalcqTajIx8ONcaeEUvc40tJ+J43O5BjGQdt8dIM1zAgWDyWGWU6Im73IFD7EFsrbeCqneGqpvoChY6LirLCLgVlBSf4WlpLaGvDPzJHf/Ss+skyseUf3ahoeMlotqOeyRFCmi4zknfo1THgqUiKcuzKELTENkZmF7ra94f9VUOVMjacfD9EpweG/pLaZkdOxPf/MABIJ/gJ9Rv30XLSZdIvkKwm4LlCzLXjyBu3rr9HdknzUQN/GeeBKSMuu1f8P2BIV9ytS0bX0Ap/CsUiJeNXKXzLpwPPurKM8/7m4NGGLmod39K2H0vRdeZHJB1/TwCX6VAO6dGv/nAyq4kC40Pu3UCw/9BMIm8fK+vUMDBIbuieJxArLLuxo+gaQqhTL/ZYFA62CUFdDTWRwVHoJw9io8VxxxXcxqMK1QatDyHAWbBM0Y454gfDPYbq7IRGwc2P3xixX5gY730YCJMrQ35uzBQ2I4rkk9znH1BDAKynDQuUCdkcM+eCh6wPVq/SNL6DwWtqanbK8X7FGWUp8woKY5Twq0C95O57drB6fiRGinXBPm7WYWyV3ccZSiyFGNadsVC3HG/R+ExGTtwkC8LH+Ek1GgskwWY83D0Gv8yUbVTS6N3iXUkDmGjBswV0="
+		rtokenWPK := resTokenWPK{resToken: rtoken, PrivateKey: tempPrivKey}
+		//rtokenWPK := resTokenWPK{resToken: rtoken, PrivateKey: acc.Keys.EncryptedPrivateKey}
+		data, err = json.Marshal(&rtokenWPK)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		data, err = json.Marshal(&rtoken)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -198,7 +219,7 @@ func jwtMiddleware(next http.Handler) http.Handler {
 		var tokenString string
 
 		tokens, ok := req.Header["Authorization"]
-		if ! ok {
+		if !ok {
 			// hack in web-app to use Content-Language
 			tokens, ok = req.Header["Content-Language"]
 		}
