@@ -5,9 +5,9 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/rs/cors"
-	"strings"
 )
 
 // The data we get from the client. Only used to parse data
@@ -70,6 +70,10 @@ func handleCipher(w http.ResponseWriter, req *http.Request) {
 		ciphs, err := db.getCiphers(acc.Id)
 		if err != nil {
 			log.Println(err)
+		}
+		for i, _ := range ciphs {
+			ciphs[i].CollectionIds = make([]string, 0)
+			ciphs[i].Object = "cipherDetails"
 		}
 		list := Data{Object: "list", Data: ciphs}
 		data, err = json.Marshal(&list)
@@ -191,7 +195,7 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 		Culture:          "en-US",
 		TwoFactorEnabled: false,
 		Key:              acc.Key,
-		SecurityStamp:    "123",
+		SecurityStamp:    nil,
 		Organizations:    nil,
 		Object:           "profile",
 	}

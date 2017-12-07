@@ -41,7 +41,9 @@ func handleProfile(w http.ResponseWriter, req *http.Request) {
 		log.Fatal(err)
 	}
 
-	data, err := json.Marshal(&acc)
+	prof := acc.getProfile()
+
+	data, err := json.Marshal(&prof)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -94,7 +96,7 @@ type resToken struct {
 	ExpiresIn    int    `json:"expires_in"`
 	TokenType    string `json:"token_type"`
 	RefreshToken string `json:"refresh_token"`
-	Key          string `json:"key"`
+	Key          string `json:"Key"`
 }
 
 // PrivateKey is needed by the web vault. But android will crash if it's included
