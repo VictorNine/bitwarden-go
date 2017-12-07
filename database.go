@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -16,7 +17,7 @@ type DB struct {
 }
 
 func (db *DB) init() error {
-	query1 := "CREATE TABLE \"accounts\" ( `id` INTEGER, `name` TEXT, `email` TEXT UNIQUE, `masterPasswordHash` NUMERIC, `masterPasswordHint` TEXT, `key` TEXT, 'refreshtoken' TEXT, PRIMARY KEY(id) );"
+	query1 := "CREATE TABLE \"accounts\" (`id`	INTEGER,`name`	TEXT,`email`	TEXT UNIQUE,`masterPasswordHash`	NUMERIC,`masterPasswordHint`	TEXT,`key`	TEXT,`refreshtoken`	TEXT,`privatekey`	TEXT NOT NULL,`pubkey`	TEXT NOT NULL,PRIMARY KEY(id))"
 	query2 := "CREATE TABLE \"ciphers\" ( `id` INTEGER PRIMARY KEY AUTOINCREMENT, `type` INTEGER, `revisiondate` INTEGER, `data` BLOB, `owner` INTEGER );"
 	query3 := "CREATE TABLE \"folders\" (`id`	TEXT,	`name`	TEXT,	`revisiondate`	INTEGER,	`owner`	INTEGER, PRIMARY KEY(id))"
 	stmt1, err := db.db.Prepare(query1)
@@ -59,6 +60,11 @@ func (db *DB) open() error {
 
 func (db *DB) close() {
 	db.db.Close()
+}
+
+func (db *DB) getCipher(owner string, ciphID string) (Cipher, error) {
+	log.Fatal("getCipher not implemented")
+	return Cipher{}, nil
 }
 
 func (db *DB) getCiphers(owner string) ([]Cipher, error) {
@@ -188,12 +194,12 @@ func (db *DB) deleteCipher(owner string, ciphID string) error {
 }
 
 func (db *DB) addAccount(acc Account) error {
-	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key, refreshtoken) values(?,?,?,?,?, ?)")
+	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key, refreshtoken, privatekey, pubkey) values(?,?,?,?,?,?,?,?)")
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key, "")
+	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key, "", "", "")
 	if err != nil {
 		return err
 	}
@@ -207,12 +213,12 @@ func (db *DB) updateAccountInfo(acc Account) error {
 		return err
 	}
 
-	stmt, err := db.db.Prepare("UPDATE accounts SET refreshtoken=$1 WHERE id=$2")
+	stmt, err := db.db.Prepare("UPDATE accounts SET refreshtoken=$1, privatekey=$2, pubkey=$3 WHERE id=$4")
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(acc.RefreshToken, id)
+	_, err = stmt.Exec(acc.RefreshToken, acc.KeyPair.EncryptedPrivateKey, acc.KeyPair.PublicKey, id)
 	if err != nil {
 		return err
 	}
@@ -223,13 +229,14 @@ func (db *DB) updateAccountInfo(acc Account) error {
 func (db *DB) getAccount(username string) (Account, error) {
 	var row *sql.Row
 	acc := Account{}
+	acc.KeyPair = KeyPair{}
 	if username != "" {
 		query := "SELECT * FROM accounts WHERE email = $1"
 		row = db.db.QueryRow(query, username)
 	}
 
 	var iid int
-	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key, &acc.RefreshToken)
+	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key, &acc.RefreshToken, &acc.KeyPair.EncryptedPrivateKey, &acc.KeyPair.PublicKey)
 	if err != nil {
 		return acc, err
 	}

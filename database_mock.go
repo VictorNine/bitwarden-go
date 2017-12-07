@@ -24,6 +24,10 @@ func (db *mockDB) updateAccountInfo(acc Account) error {
 	return nil
 }
 
+func (db *mockDB) getCipher(owner string, ciphID string) (Cipher, error) {
+	return Cipher{}, nil
+}
+
 func (db *mockDB) getCiphers(owner string) ([]Cipher, error) {
 	return nil, nil
 }
