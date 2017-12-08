@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -62,9 +61,50 @@ func (db *DB) close() {
 	db.db.Close()
 }
 
+func sqlRowToCipher(row interface {
+	Scan(dest ...interface{}) error
+}) (Cipher, error) {
+	ciph := Cipher{
+		Favorite:            false,
+		Edit:                true,
+		OrganizationUseTotp: false,
+		Object:              "cipher",
+		Attachments:         nil,
+	}
+
+	var iid int
+	var revDate int64
+	var blob []byte
+	err := row.Scan(&iid, &ciph.Type, &revDate, &blob)
+	if err != nil {
+		return ciph, err
+	}
+
+	err = json.Unmarshal(blob, &ciph.Data)
+	if err != nil {
+		return ciph, err
+	}
+
+	ciph.Id = strconv.Itoa(iid)
+	ciph.RevisionDate = time.Unix(revDate, 0)
+
+	return ciph, nil
+}
+
 func (db *DB) getCipher(owner string, ciphID string) (Cipher, error) {
-	log.Fatal("getCipher not implemented")
-	return Cipher{}, nil
+	iowner, err := strconv.ParseInt(owner, 10, 64)
+	if err != nil {
+		return Cipher{}, err
+	}
+	iciphID, err := strconv.ParseInt(ciphID, 10, 64)
+	if err != nil {
+		return Cipher{}, err
+	}
+
+	query := "SELECT id, type, revisiondate, data FROM ciphers WHERE owner = $1 AND id = $2"
+	row := db.db.QueryRow(query, iowner, iciphID)
+
+	return sqlRowToCipher(row)
 }
 
 func (db *DB) getCiphers(owner string) ([]Cipher, error) {
@@ -77,28 +117,11 @@ func (db *DB) getCiphers(owner string) ([]Cipher, error) {
 	query := "SELECT id, type, revisiondate, data FROM ciphers WHERE owner = $1"
 	rows, err := db.db.Query(query, iowner)
 
-	var iid int
-	var revDate int64
-	var blob []byte
 	for rows.Next() {
-		ciph := Cipher{
-			Favorite:            false,
-			Edit:                true,
-			OrganizationUseTotp: false,
-			Object:              "cipher",
-			Attachments:         nil,
-		}
-
-		err := rows.Scan(&iid, &ciph.Type, &revDate, &blob)
+		ciph, err := sqlRowToCipher(rows)
 		if err != nil {
 			return nil, err
 		}
-		err = json.Unmarshal(blob, &ciph.Data)
-		if err != nil {
-			return nil, err
-		}
-		ciph.Id = strconv.Itoa(iid)
-		ciph.RevisionDate = time.Unix(revDate, 0)
 
 		ciphers = append(ciphers, ciph)
 	}

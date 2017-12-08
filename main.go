@@ -106,11 +106,10 @@ func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 		var data []byte
 		ciph, err := db.getCipher(acc.Id, id)
 		if err != nil {
-			log.Println(err)
+			log.Fatal(err)
 		}
 		data, err = json.Marshal(&ciph)
 		if err != nil {
-			log.Fatal("UAAH")
 			log.Fatal(err)
 		}
 		w.Header().Set("Content-Type", "application/json")
