@@ -185,11 +185,14 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	// Create refreshtoken and store in db
-	acc.RefreshToken = createRefreshToken(acc.Id)
-	err = db.updateAccountInfo(acc)
-	if err != nil {
-		log.Fatal(err)
+	// Don't change refresh token every time or the other clients will be logged out
+	if acc.RefreshToken == "" {
+		// Create refreshtoken and store in db
+		acc.RefreshToken = createRefreshToken(acc.Id)
+		err = db.updateAccountInfo(acc)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// Create the token
