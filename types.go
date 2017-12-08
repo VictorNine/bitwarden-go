@@ -100,8 +100,9 @@ func unmarshalCipher(data io.ReadCloser) (Cipher, error) {
 	}
 
 	ciph := Cipher{ // Only including the data we use when we store it
-		Type: nciph.Type,
-		Data: cdata,
+		Type:     nciph.Type,
+		Data:     cdata,
+		Favorite: nciph.Favorite,
 	}
 
 	if nciph.FolderId != "" {

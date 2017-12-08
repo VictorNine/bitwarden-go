@@ -17,7 +17,7 @@ type DB struct {
 
 func (db *DB) init() error {
 	query1 := "CREATE TABLE \"accounts\" (`id`	INTEGER,`name`	TEXT,`email`	TEXT UNIQUE,`masterPasswordHash`	NUMERIC,`masterPasswordHint`	TEXT,`key`	TEXT,`refreshtoken`	TEXT,`privatekey`	TEXT NOT NULL,`pubkey`	TEXT NOT NULL,PRIMARY KEY(id))"
-	query2 := "CREATE TABLE \"ciphers\" (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,`type`	INTEGER,`revisiondate`	INTEGER,`data`	BLOB,`owner`	INTEGER,`folderid`	TEXT)"
+	query2 := "CREATE TABLE \"ciphers\" (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,`type`	INTEGER,`revisiondate`	INTEGER,`data`	REAL,`owner`	INTEGER,`folderid`	TEXT,`favorite`	INTEGER NOT NULL)"
 	query3 := "CREATE TABLE \"folders\" (`id`	TEXT,	`name`	TEXT,	`revisiondate`	INTEGER,	`owner`	INTEGER, PRIMARY KEY(id))"
 	stmt1, err := db.db.Prepare(query1)
 	if err != nil {
@@ -73,11 +73,11 @@ func sqlRowToCipher(row interface {
 		FolderId:            nil,
 	}
 
-	var iid int
+	var iid, favorite int
 	var revDate int64
 	var blob []byte
 	var folderid sql.NullString
-	err := row.Scan(&iid, &ciph.Type, &revDate, &blob, &folderid)
+	err := row.Scan(&iid, &ciph.Type, &revDate, &blob, &folderid, &favorite)
 	if err != nil {
 		return ciph, err
 	}
@@ -85,6 +85,10 @@ func sqlRowToCipher(row interface {
 	err = json.Unmarshal(blob, &ciph.Data)
 	if err != nil {
 		return ciph, err
+	}
+
+	if favorite == 1 {
+		ciph.Favorite = true
 	}
 
 	ciph.Id = strconv.Itoa(iid)
@@ -105,7 +109,7 @@ func (db *DB) getCipher(owner string, ciphID string) (Cipher, error) {
 		return Cipher{}, err
 	}
 
-	query := "SELECT id, type, revisiondate, data, folderid FROM ciphers WHERE owner = $1 AND id = $2"
+	query := "SELECT id, type, revisiondate, data, folderid, favorite FROM ciphers WHERE owner = $1 AND id = $2"
 	row := db.db.QueryRow(query, iowner, iciphID)
 
 	return sqlRowToCipher(row)
@@ -118,7 +122,7 @@ func (db *DB) getCiphers(owner string) ([]Cipher, error) {
 	}
 
 	var ciphers []Cipher
-	query := "SELECT id, type, revisiondate, data, folderid FROM ciphers WHERE owner = $1"
+	query := "SELECT id, type, revisiondate, data, folderid, favorite FROM ciphers WHERE owner = $1"
 	rows, err := db.db.Query(query, iowner)
 
 	for rows.Next() {
@@ -178,7 +182,12 @@ func (db *DB) updateCipher(newData Cipher, owner string, ciphID string) error {
 		return err
 	}
 
-	stmt, err := db.db.Prepare("UPDATE ciphers SET type=$1, revisiondate=$2, data=$3, folderid=$4 WHERE id=$5 AND owner=$6")
+	favorite := 0
+	if newData.Favorite {
+		favorite = 1
+	}
+
+	stmt, err := db.db.Prepare("UPDATE ciphers SET type=$1, revisiondate=$2, data=$3, folderid=$4, favorite=$5 WHERE id=$6 AND owner=$7")
 	if err != nil {
 		return err
 	}
@@ -188,7 +197,7 @@ func (db *DB) updateCipher(newData Cipher, owner string, ciphID string) error {
 		return err
 	}
 
-	_, err = stmt.Exec(newData.Type, time.Now().Unix(), bdata, newData.FolderId, iciphID, iowner)
+	_, err = stmt.Exec(newData.Type, time.Now().Unix(), bdata, newData.FolderId, favorite, iciphID, iowner)
 	if err != nil {
 		return err
 	}
