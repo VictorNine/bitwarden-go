@@ -104,6 +104,9 @@ func unmarshalCipher(data io.ReadCloser) (Cipher, error) {
 		Data: cdata,
 	}
 
+	if nciph.FolderId != "" {
+		ciph.FolderId = &nciph.FolderId
+	}
 	return ciph, nil
 }
 

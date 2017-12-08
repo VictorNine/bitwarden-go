@@ -115,24 +115,7 @@ func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data)
 	case "POST":
-		log.Println("POST Ciphers")
-		var data []byte
-		rCiph, err := unmarshalCipher(req.Body)
-		if err != nil {
-			log.Fatal("Cipher decode error" + err.Error())
-		}
-
-		// Store the new cipher object in db
-		newCiph, err := db.newCipher(rCiph, acc.Id)
-		if err != nil {
-			log.Fatal("newCipher error" + err.Error())
-		}
-		data, err = json.Marshal(&newCiph)
-		if err != nil {
-			log.Fatal(err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
+		fallthrough // Do same as PUT. Web Vault want's to post
 	case "PUT":
 		rCiph, err := unmarshalCipher(req.Body)
 		if err != nil {
