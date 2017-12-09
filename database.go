@@ -148,7 +148,7 @@ func (db *DB) newCipher(ciph Cipher, owner string) (Cipher, error) {
 
 	ciph.RevisionDate = time.Now()
 
-	stmt, err := db.db.Prepare("INSERT INTO ciphers(type, revisiondate, data, owner) values(?,?,?, ?)")
+	stmt, err := db.db.Prepare("INSERT INTO ciphers(type, revisiondate, data, owner, favorite) values(?,?,?, ?, ?)")
 	if err != nil {
 		return ciph, err
 	}
@@ -158,7 +158,7 @@ func (db *DB) newCipher(ciph Cipher, owner string) (Cipher, error) {
 		return ciph, err
 	}
 
-	res, err := stmt.Exec(ciph.Type, ciph.RevisionDate.Unix(), data, iowner)
+	res, err := stmt.Exec(ciph.Type, ciph.RevisionDate.Unix(), data, iowner, 0)
 	if err != nil {
 		return ciph, err
 	}
