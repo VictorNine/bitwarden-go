@@ -262,13 +262,18 @@ func (db *DB) updateAccountInfo(acc Account) error {
 	return nil
 }
 
-func (db *DB) getAccount(username string) (Account, error) {
+func (db *DB) getAccount(username string, refreshtoken string) (Account, error) {
 	var row *sql.Row
 	acc := Account{}
 	acc.KeyPair = KeyPair{}
 	if username != "" {
 		query := "SELECT * FROM accounts WHERE email = $1"
 		row = db.db.QueryRow(query, username)
+	}
+
+	if refreshtoken != "" {
+		query := "SELECT * FROM accounts WHERE refreshtoken = $1"
+		row = db.db.QueryRow(query, refreshtoken)
 	}
 
 	var iid int

@@ -26,7 +26,7 @@ func handleCipher(w http.ResponseWriter, req *http.Request) {
 
 	log.Println(email + " is trying to add data")
 
-	acc, err := db.getAccount(email)
+	acc, err := db.getAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -76,7 +76,7 @@ func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 	// Get the cipher id
 	id := strings.TrimPrefix(req.URL.Path, "/api/ciphers/")
 
-	acc, err := db.getAccount(email)
+	acc, err := db.getAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -148,7 +148,7 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 
 	log.Println(email + " is trying to sync")
 
-	acc, err := db.getAccount(email)
+	acc, err := db.getAccount(email, "")
 
 	prof := Profile{
 		Id:               acc.Id,
@@ -205,7 +205,7 @@ func handleImport(w http.ResponseWriter, req *http.Request) {
 
 	log.Println(email + " is trying to import data")
 
-	acc, err := db.getAccount(email)
+	acc, err := db.getAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -243,7 +243,7 @@ func handleFolder(w http.ResponseWriter, req *http.Request) {
 
 	log.Println(email + " is trying to add a new folder")
 
-	acc, err := db.getAccount(email)
+	acc, err := db.getAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -291,7 +291,7 @@ func handleFolder(w http.ResponseWriter, req *http.Request) {
 type database interface {
 	init() error
 	addAccount(acc Account) error
-	getAccount(username string) (Account, error)
+	getAccount(username string, refreshtoken string) (Account, error)
 	updateAccountInfo(acc Account) error
 	getCipher(owner string, ciphID string) (Cipher, error)
 	getCiphers(owner string) ([]Cipher, error)

@@ -14,9 +14,9 @@ func TestHandleLogin(t *testing.T) {
 		data     url.Values
 		expected int
 	}{{url.Values{"client_id": {"android"}, "grant_type": {"password"}, "username": {"nobody@example.com"}, "password": {"sjlcxv1TSe1wTHoYF50WJL3X07oCFxqhXYFeGfrbtII="}}, 200},
-		{url.Values{"client_id": {"android"}, "grant_type": {"refresh_token"}, "refresh_token": {"1:abcdef"}}, 200},
+		{url.Values{"client_id": {"android"}, "grant_type": {"refresh_token"}, "refresh_token": {"abcdef"}}, 200},
 		{url.Values{"client_id": {"android"}, "grant_type": {"password"}, "username": {"nobody@example.com"}, "password": {""}}, 401},
-		{url.Values{"client_id": {"android"}, "grant_type": {"refresh_token"}, "refresh_token": {"1:nasdfasdf"}}, 401},
+		{url.Values{"client_id": {"android"}, "grant_type": {"refresh_token"}, "refresh_token": {"nasdfasdf"}}, 401},
 	}
 
 	keyHash, _ := reHashPassword("sjlcxv1TSe1wTHoYF50WJL3X07oCFxqhXYFeGfrbtII=", "nobody@example.com")
