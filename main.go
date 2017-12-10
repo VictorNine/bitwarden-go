@@ -10,24 +10,6 @@ import (
 	"github.com/rs/cors"
 )
 
-// The data we get from the client. Only used to parse data
-type newCipher struct {
-	Type           int       `json:"type"`
-	FolderId       string    `json:"folderId"`
-	OrganizationId string    `json:"organizationId"`
-	Name           string    `json:"name"`
-	Notes          string    `json:"notes"`
-	Favorite       bool      `json:"favorite"`
-	Login          loginData `json:"login"`
-}
-
-type loginData struct {
-	URI      string `json:"uri"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	ToTp     string `json:"totp"`
-}
-
 func handleCollections(w http.ResponseWriter, req *http.Request) {
 
 	collections := Data{Object: "list", Data: []string{}}
@@ -78,7 +60,6 @@ func handleCipher(w http.ResponseWriter, req *http.Request) {
 		list := Data{Object: "list", Data: ciphs}
 		data, err = json.Marshal(&list)
 		if err != nil {
-			log.Fatal("UAAH")
 			log.Fatal(err)
 		}
 	}
@@ -217,6 +198,46 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 	w.Write(jdata)
 }
 
+// Only handles ciphers
+// TODO: handle folders and folderRelationships
+func handleImport(w http.ResponseWriter, req *http.Request) {
+	email := req.Context().Value(ctxKey("email")).(string)
+
+	log.Println(email + " is trying to import data")
+
+	acc, err := db.getAccount(email)
+	if err != nil {
+		log.Fatal("Account lookup " + err.Error())
+	}
+
+	decoder := json.NewDecoder(req.Body)
+	data := struct {
+		Ciphers             []newCipher `json:"ciphers"`
+		Foders              []string    `json:"folders"`
+		FolderRelationships []string    `json:"folderRelationships"`
+	}{}
+
+	err = decoder.Decode(&data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer req.Body.Close()
+
+	for _, nc := range data.Ciphers {
+		c, err := nc.toCipher()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		_, err = db.newCipher(c, acc.Id)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
+
+	w.Write([]byte{0x00})
+}
+
 func handleFolder(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 
@@ -314,10 +335,9 @@ func main() {
 	mux.Handle("/apifolders", jwtMiddleware(http.HandlerFunc(handleFolder))) // The android app want's the address like this, will be fixed in the next version. Issue #174
 	mux.Handle("/api/sync", jwtMiddleware(http.HandlerFunc(handleSync)))
 
+	mux.Handle("/api/ciphers/import", jwtMiddleware(http.HandlerFunc(handleImport)))
 	mux.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(handleCipher)))
 	mux.Handle("/api/ciphers/", jwtMiddleware(http.HandlerFunc(handleCipherUpdate)))
-
-	//mux.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(handleCipher)))
 
 	log.Println("Starting server on " + serverAddr)
 	handler := cors.New(cors.Options{
