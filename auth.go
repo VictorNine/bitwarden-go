@@ -28,49 +28,6 @@ func reHashPassword(key, salt string) (string, error) {
 	return base64.StdEncoding.EncodeToString(hash), nil
 }
 
-func handleKeysUpdate(w http.ResponseWriter, req *http.Request) {
-	email := req.Context().Value(ctxKey("email")).(string)
-
-	acc, err := db.getAccount(email, "")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Adding key pair")
-
-	decoder := json.NewDecoder(req.Body)
-	var kp KeyPair
-	err = decoder.Decode(&kp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer req.Body.Close()
-
-	acc.KeyPair = kp
-
-	db.updateAccountInfo(acc)
-}
-
-func handleProfile(w http.ResponseWriter, req *http.Request) {
-	email := req.Context().Value(ctxKey("email")).(string)
-	log.Println("Profile requested")
-
-	acc, err := db.getAccount(email, "")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	prof := acc.getProfile()
-
-	data, err := json.Marshal(&prof)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
-}
-
 func handleRegister(w http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
 	var acc Account
