@@ -76,7 +76,10 @@ func handleRegister(w http.ResponseWriter, req *http.Request) {
 	var acc Account
 	err := decoder.Decode(&acc)
 	if err != nil {
-		log.Fatal(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+		log.Println(err)
+		return
 	}
 	defer req.Body.Close()
 
@@ -92,7 +95,10 @@ func handleRegister(w http.ResponseWriter, req *http.Request) {
 
 	err = db.addAccount(acc)
 	if err != nil {
-		log.Fatal(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(500)))
+		log.Println(err)
+		return
 	}
 
 	w.Write([]byte{0x00})
@@ -129,7 +135,8 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 
 	grantType, ok := req.PostForm["grant_type"]
 	if !ok {
-		w.Write([]byte("error"))
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(http.StatusText(http.StatusBadRequest)))
 		log.Println("Login without grant_type")
 		return
 	}
@@ -144,7 +151,7 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 			// Fatal to always catch this
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))
-			log.Fatal("fake refreshToken " + rrefreshToken)
+			log.Println("fake refreshToken " + rrefreshToken)
 			return
 		}
 
@@ -171,7 +178,10 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 
 		acc, err = db.getAccount(username, "")
 		if err != nil {
-			log.Fatal(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(http.StatusText(401)))
+			log.Println("Account not found")
+			return
 		}
 
 		reHash, _ := reHashPassword(passwordHash, acc.Email)
@@ -190,7 +200,10 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		acc.RefreshToken = createRefreshToken()
 		err = db.updateAccountInfo(acc)
 		if err != nil {
-			log.Fatal(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(http.StatusText(401)))
+			log.Println(err)
+			return
 		}
 	}
 
@@ -219,12 +232,18 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 		rtokenWPK := resTokenWPK{resToken: rtoken, PrivateKey: acc.KeyPair.EncryptedPrivateKey}
 		data, err = json.Marshal(&rtokenWPK)
 		if err != nil {
-			log.Fatal(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+			log.Println("Account not found")
+			return
 		}
 	} else {
 		data, err = json.Marshal(&rtoken)
 		if err != nil {
-			log.Fatal(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+			log.Println("Account not found")
+			return
 		}
 	}
 
