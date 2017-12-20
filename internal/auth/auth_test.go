@@ -1,4 +1,4 @@
-package common
+package auth
 
 import (
 	"net/http"
@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	bw "github.com/VictorNine/bitwarden-go/internal/common"
 )
 
 func TestHandleLogin(t *testing.T) {
@@ -20,8 +22,8 @@ func TestHandleLogin(t *testing.T) {
 	}
 
 	keyHash, _ := reHashPassword("sjlcxv1TSe1wTHoYF50WJL3X07oCFxqhXYFeGfrbtII=", "nobody@example.com")
-	db := &mockDB{username: "nobody@example.com", password: keyHash, refreshToken: "abcdef"}
-	authHandler := NewAuth(db, nil, 3600)
+	db := &bw.MockDB{Username: "nobody@example.com", Password: keyHash, RefreshToken: "abcdef"}
+	authHandler := New(db, nil, 3600)
 
 	for _, c := range cases {
 		req, err := http.NewRequest("POST", "/identity/connect/token", strings.NewReader(c.data.Encode()))

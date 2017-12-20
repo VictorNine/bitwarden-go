@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/VictorNine/bitwarden-go/internal/api"
-	bw "github.com/VictorNine/bitwarden-go/internal/common"
+	"github.com/VictorNine/bitwarden-go/internal/auth"
 	"github.com/rs/cors"
 )
 
@@ -29,7 +29,7 @@ func main() {
 		}
 	}
 
-	authHandler := bw.NewAuth(db, mySigningKey, jwtExpire)
+	authHandler := auth.New(db, mySigningKey, jwtExpire)
 	apiHandler := api.New(db)
 
 	mux := http.NewServeMux()

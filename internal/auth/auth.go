@@ -1,4 +1,4 @@
-package common
+package auth
 
 import (
 	"context"
@@ -15,16 +15,17 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 
 	jwt "github.com/dgrijalva/jwt-go"
+
+	bw "github.com/VictorNine/bitwarden-go/internal/common"
 )
 
 type Auth struct {
-	db         Database
+	db         bw.Database
 	signingKey []byte
 	jwtExpire  int
 }
 
-// TODO: rename to New() when when moved to sep pkg
-func NewAuth(db Database, signingKey []byte, jwtExpire int) Auth {
+func New(db bw.Database, signingKey []byte, jwtExpire int) Auth {
 	auth := Auth{
 		db:         db,
 		signingKey: signingKey,
@@ -47,7 +48,7 @@ func reHashPassword(key, salt string) (string, error) {
 
 func (auth *Auth) HandleRegister(w http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
-	var acc Account
+	var acc bw.Account
 	err := decoder.Decode(&acc)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -117,7 +118,7 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 	clientID := req.PostForm["client_id"][0]
 
-	var acc Account
+	var acc bw.Account
 	var err error
 	if grantType[0] == "refresh_token" {
 		rrefreshToken := req.PostForm["refresh_token"][0]

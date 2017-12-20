@@ -3,60 +3,60 @@ package common
 import _ "github.com/mattn/go-sqlite3"
 
 // mock database used for testing
-type mockDB struct {
-	username     string
-	password     string
-	refreshToken string
+type MockDB struct {
+	Username     string
+	Password     string
+	RefreshToken string
 }
 
-func (db *mockDB) Init() error {
+func (db *MockDB) Init() error {
 	return nil
 }
 
-func (db *mockDB) Open() error {
+func (db *MockDB) Open() error {
 	return nil
 }
 
-func (db *mockDB) Close() {
+func (db *MockDB) Close() {
 }
 
-func (db *mockDB) UpdateAccountInfo(acc Account) error {
+func (db *MockDB) UpdateAccountInfo(acc Account) error {
 	return nil
 }
 
-func (db *mockDB) GetCipher(owner string, ciphID string) (Cipher, error) {
+func (db *MockDB) GetCipher(owner string, ciphID string) (Cipher, error) {
 	return Cipher{}, nil
 }
 
-func (db *mockDB) GetCiphers(owner string) ([]Cipher, error) {
+func (db *MockDB) GetCiphers(owner string) ([]Cipher, error) {
 	return nil, nil
 }
 
-func (db *mockDB) NewCipher(ciph Cipher, owner string) (Cipher, error) {
+func (db *MockDB) NewCipher(ciph Cipher, owner string) (Cipher, error) {
 	return Cipher{}, nil
 
 }
 
-func (db *mockDB) UpdateCipher(newData Cipher, owner string, ciphID string) error {
+func (db *MockDB) UpdateCipher(newData Cipher, owner string, ciphID string) error {
 	return nil
 }
 
-func (db *mockDB) DeleteCipher(owner string, ciphID string) error {
+func (db *MockDB) DeleteCipher(owner string, ciphID string) error {
 	return nil
 }
 
-func (db *mockDB) AddAccount(acc Account) error {
+func (db *MockDB) AddAccount(acc Account) error {
 	return nil
 }
 
-func (db *mockDB) GetAccount(username string, refreshtoken string) (Account, error) {
-	return Account{Email: db.username, MasterPasswordHash: db.password, RefreshToken: db.refreshToken}, nil
+func (db *MockDB) GetAccount(username string, refreshtoken string) (Account, error) {
+	return Account{Email: db.Username, MasterPasswordHash: db.Password, RefreshToken: db.RefreshToken}, nil
 }
 
-func (db *mockDB) AddFolder(name string, owner string) (Folder, error) {
+func (db *MockDB) AddFolder(name string, owner string) (Folder, error) {
 	return Folder{}, nil
 }
 
-func (db *mockDB) GetFolders(owner string) ([]Folder, error) {
+func (db *MockDB) GetFolders(owner string) ([]Folder, error) {
 	return nil, nil
 }
