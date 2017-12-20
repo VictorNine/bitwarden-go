@@ -27,10 +27,12 @@ func main() {
 		}
 	}
 
+	authHandler := newAuth(db)
+
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/accounts/register", handleRegister)
-	mux.HandleFunc("/identity/connect/token", handleLogin)
+	mux.HandleFunc("/api/accounts/register", authHandler.handleRegister)
+	mux.HandleFunc("/identity/connect/token", authHandler.handleLogin)
 
 	mux.Handle("/api/accounts/keys", jwtMiddleware(http.HandlerFunc(handleKeysUpdate)))
 	mux.Handle("/api/accounts/profile", jwtMiddleware(http.HandlerFunc(handleProfile)))

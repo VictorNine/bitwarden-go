@@ -17,6 +17,19 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
+type Auth struct {
+	db database
+}
+
+// TODO: rename to New() when when moved to sep pkg
+func newAuth(db database) Auth {
+	auth := Auth{
+		db: db,
+	}
+
+	return auth
+}
+
 func reHashPassword(key, salt string) (string, error) {
 	b, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
@@ -28,7 +41,7 @@ func reHashPassword(key, salt string) (string, error) {
 	return base64.StdEncoding.EncodeToString(hash), nil
 }
 
-func handleRegister(w http.ResponseWriter, req *http.Request) {
+func (auth *Auth) handleRegister(w http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
 	var acc Account
 	err := decoder.Decode(&acc)
@@ -50,7 +63,7 @@ func handleRegister(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = db.addAccount(acc)
+	err = auth.db.addAccount(acc)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(http.StatusText(500)))
@@ -87,7 +100,7 @@ type resTokenWPK struct {
 	PrivateKey string `json:"PrivateKey"`
 }
 
-func handleLogin(w http.ResponseWriter, req *http.Request) {
+func (auth *Auth) handleLogin(w http.ResponseWriter, req *http.Request) {
 	req.ParseForm()
 
 	grantType, ok := req.PostForm["grant_type"]
@@ -112,7 +125,7 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		acc, err = db.getAccount("", rrefreshToken)
+		acc, err = auth.db.getAccount("", rrefreshToken)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))
@@ -133,7 +146,7 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 
 		log.Println(username + " is trying to login")
 
-		acc, err = db.getAccount(username, "")
+		acc, err = auth.db.getAccount(username, "")
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))
@@ -155,7 +168,7 @@ func handleLogin(w http.ResponseWriter, req *http.Request) {
 	if acc.RefreshToken == "" {
 		// Create refreshtoken and store in db
 		acc.RefreshToken = createRefreshToken()
-		err = db.updateAccountInfo(acc)
+		err = auth.db.updateAccountInfo(acc)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))

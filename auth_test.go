@@ -21,6 +21,7 @@ func TestHandleLogin(t *testing.T) {
 
 	keyHash, _ := reHashPassword("sjlcxv1TSe1wTHoYF50WJL3X07oCFxqhXYFeGfrbtII=", "nobody@example.com")
 	db = &mockDB{username: "nobody@example.com", password: keyHash, refreshToken: "abcdef"}
+	authHandler := newAuth(db)
 
 	for _, c := range cases {
 		req, err := http.NewRequest("POST", "/identity/connect/token", strings.NewReader(c.data.Encode()))
@@ -33,7 +34,7 @@ func TestHandleLogin(t *testing.T) {
 
 		res := httptest.NewRecorder()
 
-		handleLogin(res, req)
+		authHandler.handleLogin(res, req)
 		if res.Code != c.expected {
 			t.Errorf("Expected %v got %v", c.expected, res.Code)
 		}
