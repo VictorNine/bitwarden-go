@@ -182,3 +182,20 @@ type Data struct {
 	Object string
 	Data   interface{}
 }
+
+// Interface to make testing easier
+type database interface {
+	init() error
+	addAccount(acc Account) error
+	getAccount(username string, refreshtoken string) (Account, error)
+	updateAccountInfo(acc Account) error
+	getCipher(owner string, ciphID string) (Cipher, error)
+	getCiphers(owner string) ([]Cipher, error)
+	newCipher(ciph Cipher, owner string) (Cipher, error)
+	updateCipher(newData Cipher, owner string, ciphID string) error
+	deleteCipher(owner string, ciphID string) error
+	open() error
+	close()
+	addFolder(name string, owner string) (Folder, error)
+	getFolders(owner string) ([]Folder, error)
+}
