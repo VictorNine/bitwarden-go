@@ -21,7 +21,7 @@ type Account struct {
 	RefreshToken       string  `json:"-"`
 }
 
-func (acc Account) getProfile() Profile {
+func (acc Account) GetProfile() Profile {
 	return Profile{
 		Id:                 acc.Id,
 		Name:               nil,

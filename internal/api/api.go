@@ -1,4 +1,4 @@
-package common
+package api
 
 import (
 	"encoding/json"
@@ -6,14 +6,16 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	bw "github.com/VictorNine/bitwarden-go/internal/common"
 )
 
 type APIHandler struct {
-	db Database
+	db bw.Database
 }
 
 // TODO: Rewrite to new when moved to sep pkg
-func NewAPI(db Database) APIHandler {
+func New(db bw.Database) APIHandler {
 	h := APIHandler{
 		db: db,
 	}
@@ -22,7 +24,7 @@ func NewAPI(db Database) APIHandler {
 }
 
 func (h *APIHandler) HandleKeysUpdate(w http.ResponseWriter, req *http.Request) {
-	email := GetEmail(req)
+	email := bw.GetEmail(req)
 
 	acc, err := h.db.GetAccount(email, "")
 	if err != nil {
@@ -32,7 +34,7 @@ func (h *APIHandler) HandleKeysUpdate(w http.ResponseWriter, req *http.Request) 
 	log.Println("Adding key pair")
 
 	decoder := json.NewDecoder(req.Body)
-	var kp KeyPair
+	var kp bw.KeyPair
 	err = decoder.Decode(&kp)
 	if err != nil {
 		log.Fatal(err)
@@ -45,7 +47,7 @@ func (h *APIHandler) HandleKeysUpdate(w http.ResponseWriter, req *http.Request) 
 }
 
 func (h *APIHandler) HandleProfile(w http.ResponseWriter, req *http.Request) {
-	email := GetEmail(req)
+	email := bw.GetEmail(req)
 	log.Println("Profile requested")
 
 	acc, err := h.db.GetAccount(email, "")
@@ -53,7 +55,7 @@ func (h *APIHandler) HandleProfile(w http.ResponseWriter, req *http.Request) {
 		log.Fatal(err)
 	}
 
-	prof := acc.getProfile()
+	prof := acc.GetProfile()
 
 	data, err := json.Marshal(&prof)
 	if err != nil {
@@ -66,7 +68,7 @@ func (h *APIHandler) HandleProfile(w http.ResponseWriter, req *http.Request) {
 
 func (h *APIHandler) HandleCollections(w http.ResponseWriter, req *http.Request) {
 
-	collections := Data{Object: "list", Data: []string{}}
+	collections := bw.Data{Object: "list", Data: []string{}}
 	data, err := json.Marshal(collections)
 	if err != nil {
 		log.Fatal(err)
@@ -76,7 +78,7 @@ func (h *APIHandler) HandleCollections(w http.ResponseWriter, req *http.Request)
 }
 
 func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
-	email := GetEmail(req)
+	email := bw.GetEmail(req)
 
 	log.Println(email + " is trying to add data")
 
@@ -111,7 +113,7 @@ func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 			ciphs[i].CollectionIds = make([]string, 0)
 			ciphs[i].Object = "cipherDetails"
 		}
-		list := Data{Object: "list", Data: ciphs}
+		list := bw.Data{Object: "list", Data: ciphs}
 		data, err = json.Marshal(&list)
 		if err != nil {
 			log.Fatal(err)
@@ -124,7 +126,7 @@ func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 
 // This function handles updates and deleteing
 func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request) {
-	email := GetEmail(req)
+	email := bw.GetEmail(req)
 	log.Println(email + " is trying to edit his data")
 
 	// Get the cipher id
@@ -198,13 +200,13 @@ func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request
 }
 
 func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
-	email := GetEmail(req)
+	email := bw.GetEmail(req)
 
 	log.Println(email + " is trying to sync")
 
 	acc, err := h.db.GetAccount(email, "")
 
-	prof := Profile{
+	prof := bw.Profile{
 		Id:               acc.Id,
 		Email:            acc.Email,
 		EmailVerified:    false,
@@ -227,15 +229,15 @@ func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
 		log.Println(err)
 	}
 
-	Domains := Domains{
+	Domains := bw.Domains{
 		Object:            "domains",
 		EquivalentDomains: nil,
-		GlobalEquivalentDomains: []GlobalEquivalentDomains{
-			GlobalEquivalentDomains{Type: 1, Domains: []string{"youtube.com", "google.com", "gmail.com"}, Excluded: false},
+		GlobalEquivalentDomains: []bw.GlobalEquivalentDomains{
+			bw.GlobalEquivalentDomains{Type: 1, Domains: []string{"youtube.com", "google.com", "gmail.com"}, Excluded: false},
 		},
 	}
 
-	data := SyncData{
+	data := bw.SyncData{
 		Profile: prof,
 		Folders: folders,
 		Domains: Domains,
@@ -255,7 +257,7 @@ func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
 // Only handles ciphers
 // TODO: handle folders and folderRelationships
 func (h *APIHandler) HandleImport(w http.ResponseWriter, req *http.Request) {
-	email := GetEmail(req)
+	email := bw.GetEmail(req)
 
 	log.Println(email + " is trying to import data")
 
@@ -293,7 +295,7 @@ func (h *APIHandler) HandleImport(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h *APIHandler) HandleFolder(w http.ResponseWriter, req *http.Request) {
-	email := GetEmail(req)
+	email := bw.GetEmail(req)
 
 	log.Println(email + " is trying to add a new folder")
 
@@ -330,7 +332,7 @@ func (h *APIHandler) HandleFolder(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			log.Println(err)
 		}
-		list := Data{Object: "list", Data: folders}
+		list := bw.Data{Object: "list", Data: folders}
 		data, err = json.Marshal(list)
 		if err != nil {
 			log.Fatal(err)
@@ -360,9 +362,9 @@ type loginData struct {
 	ToTp     string `json:"totp"`
 }
 
-func (nciph *newCipher) toCipher() (Cipher, error) {
+func (nciph *newCipher) toCipher() (bw.Cipher, error) {
 	// Create new
-	cdata := CipherData{
+	cdata := bw.CipherData{
 		Uri:      nciph.Login.URI,
 		Username: nciph.Login.Username,
 		Password: nciph.Login.Password,
@@ -378,7 +380,7 @@ func (nciph *newCipher) toCipher() (Cipher, error) {
 		cdata.Notes = nil
 	}
 
-	ciph := Cipher{ // Only including the data we use when we store it
+	ciph := bw.Cipher{ // Only including the data we use when we store it
 		Type:     nciph.Type,
 		Data:     cdata,
 		Favorite: nciph.Favorite,
@@ -392,12 +394,12 @@ func (nciph *newCipher) toCipher() (Cipher, error) {
 }
 
 // unmarshalCipher Take the recived bytes and make it a Cipher struct
-func unmarshalCipher(data io.ReadCloser) (Cipher, error) {
+func unmarshalCipher(data io.ReadCloser) (bw.Cipher, error) {
 	decoder := json.NewDecoder(data)
 	var nciph newCipher
 	err := decoder.Decode(&nciph)
 	if err != nil {
-		return Cipher{}, err
+		return bw.Cipher{}, err
 	}
 
 	defer data.Close()
