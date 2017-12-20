@@ -7,10 +7,23 @@ import (
 	"strings"
 )
 
-func handleKeysUpdate(w http.ResponseWriter, req *http.Request) {
+type APIHandler struct {
+	db database
+}
+
+// TODO: Rewrite to new when moved to sep pkg
+func newAPI(db database) APIHandler {
+	h := APIHandler{
+		db: db,
+	}
+
+	return h
+}
+
+func (h *APIHandler) HandleKeysUpdate(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 
-	acc, err := db.getAccount(email, "")
+	acc, err := h.db.getAccount(email, "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,14 +40,14 @@ func handleKeysUpdate(w http.ResponseWriter, req *http.Request) {
 
 	acc.KeyPair = kp
 
-	db.updateAccountInfo(acc)
+	h.db.updateAccountInfo(acc)
 }
 
-func handleProfile(w http.ResponseWriter, req *http.Request) {
+func (h *APIHandler) HandleProfile(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 	log.Println("Profile requested")
 
-	acc, err := db.getAccount(email, "")
+	acc, err := h.db.getAccount(email, "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,7 +63,7 @@ func handleProfile(w http.ResponseWriter, req *http.Request) {
 	w.Write(data)
 }
 
-func handleCollections(w http.ResponseWriter, req *http.Request) {
+func (h *APIHandler) HandleCollections(w http.ResponseWriter, req *http.Request) {
 
 	collections := Data{Object: "list", Data: []string{}}
 	data, err := json.Marshal(collections)
@@ -61,12 +74,12 @@ func handleCollections(w http.ResponseWriter, req *http.Request) {
 	w.Write(data)
 }
 
-func handleCipher(w http.ResponseWriter, req *http.Request) {
+func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 
 	log.Println(email + " is trying to add data")
 
-	acc, err := db.getAccount(email, "")
+	acc, err := h.db.getAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -80,7 +93,7 @@ func handleCipher(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Store the new cipher object in db
-		newCiph, err := db.newCipher(rCiph, acc.Id)
+		newCiph, err := h.db.newCipher(rCiph, acc.Id)
 		if err != nil {
 			log.Fatal("newCipher error" + err.Error())
 		}
@@ -89,7 +102,7 @@ func handleCipher(w http.ResponseWriter, req *http.Request) {
 			log.Fatal(err)
 		}
 	} else {
-		ciphs, err := db.getCiphers(acc.Id)
+		ciphs, err := h.db.getCiphers(acc.Id)
 		if err != nil {
 			log.Println(err)
 		}
@@ -109,14 +122,14 @@ func handleCipher(w http.ResponseWriter, req *http.Request) {
 }
 
 // This function handles updates and deleteing
-func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
+func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 	log.Println(email + " is trying to edit his data")
 
 	// Get the cipher id
 	id := strings.TrimPrefix(req.URL.Path, "/api/ciphers/")
 
-	acc, err := db.getAccount(email, "")
+	acc, err := h.db.getAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -125,7 +138,7 @@ func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 	case "GET":
 		log.Println("GET Ciphers for " + acc.Id)
 		var data []byte
-		ciph, err := db.getCipher(acc.Id, id)
+		ciph, err := h.db.getCipher(acc.Id, id)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -146,7 +159,7 @@ func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 		// Set correct ID
 		rCiph.Id = id
 
-		err = db.updateCipher(rCiph, acc.Id, id)
+		err = h.db.updateCipher(rCiph, acc.Id, id)
 		if err != nil {
 			w.Write([]byte("0"))
 			log.Println(err)
@@ -165,7 +178,7 @@ func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 		return
 
 	case "DELETE":
-		err := db.deleteCipher(acc.Id, id)
+		err := h.db.deleteCipher(acc.Id, id)
 		if err != nil {
 			w.Write([]byte("0"))
 			log.Println(err)
@@ -183,12 +196,12 @@ func handleCipherUpdate(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func handleSync(w http.ResponseWriter, req *http.Request) {
+func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 
 	log.Println(email + " is trying to sync")
 
-	acc, err := db.getAccount(email, "")
+	acc, err := h.db.getAccount(email, "")
 
 	prof := Profile{
 		Id:               acc.Id,
@@ -203,12 +216,12 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 		Object:           "profile",
 	}
 
-	ciphs, err := db.getCiphers(acc.Id)
+	ciphs, err := h.db.getCiphers(acc.Id)
 	if err != nil {
 		log.Println(err)
 	}
 
-	folders, err := db.getFolders(acc.Id)
+	folders, err := h.db.getFolders(acc.Id)
 	if err != nil {
 		log.Println(err)
 	}
@@ -240,12 +253,12 @@ func handleSync(w http.ResponseWriter, req *http.Request) {
 
 // Only handles ciphers
 // TODO: handle folders and folderRelationships
-func handleImport(w http.ResponseWriter, req *http.Request) {
+func (h *APIHandler) HandleImport(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 
 	log.Println(email + " is trying to import data")
 
-	acc, err := db.getAccount(email, "")
+	acc, err := h.db.getAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -269,7 +282,7 @@ func handleImport(w http.ResponseWriter, req *http.Request) {
 			log.Fatal(err.Error())
 		}
 
-		_, err = db.newCipher(c, acc.Id)
+		_, err = h.db.newCipher(c, acc.Id)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -278,12 +291,12 @@ func handleImport(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte{0x00})
 }
 
-func handleFolder(w http.ResponseWriter, req *http.Request) {
+func (h *APIHandler) HandleFolder(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 
 	log.Println(email + " is trying to add a new folder")
 
-	acc, err := db.getAccount(email, "")
+	acc, err := h.db.getAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -302,7 +315,7 @@ func handleFolder(w http.ResponseWriter, req *http.Request) {
 		}
 		defer req.Body.Close()
 
-		folder, err := db.addFolder(folderData.Name, acc.Id)
+		folder, err := h.db.addFolder(folderData.Name, acc.Id)
 		if err != nil {
 			log.Fatal("newFolder error" + err.Error())
 		}
@@ -312,7 +325,7 @@ func handleFolder(w http.ResponseWriter, req *http.Request) {
 			log.Fatal(err)
 		}
 	} else {
-		folders, err := db.getFolders(acc.Id)
+		folders, err := h.db.getFolders(acc.Id)
 		if err != nil {
 			log.Println(err)
 		}

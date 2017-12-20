@@ -28,22 +28,23 @@ func main() {
 	}
 
 	authHandler := newAuth(db)
+	apiHandler := newAPI(db)
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/accounts/register", authHandler.handleRegister)
 	mux.HandleFunc("/identity/connect/token", authHandler.handleLogin)
 
-	mux.Handle("/api/accounts/keys", jwtMiddleware(http.HandlerFunc(handleKeysUpdate)))
-	mux.Handle("/api/accounts/profile", jwtMiddleware(http.HandlerFunc(handleProfile)))
-	mux.Handle("/api/collections", jwtMiddleware(http.HandlerFunc(handleCollections)))
-	mux.Handle("/api/folders", jwtMiddleware(http.HandlerFunc(handleFolder)))
-	mux.Handle("/apifolders", jwtMiddleware(http.HandlerFunc(handleFolder))) // The android app want's the address like this, will be fixed in the next version. Issue #174
-	mux.Handle("/api/sync", jwtMiddleware(http.HandlerFunc(handleSync)))
+	mux.Handle("/api/accounts/keys", jwtMiddleware(http.HandlerFunc(apiHandler.HandleKeysUpdate)))
+	mux.Handle("/api/accounts/profile", jwtMiddleware(http.HandlerFunc(apiHandler.HandleProfile)))
+	mux.Handle("/api/collections", jwtMiddleware(http.HandlerFunc(apiHandler.HandleCollections)))
+	mux.Handle("/api/folders", jwtMiddleware(http.HandlerFunc(apiHandler.HandleFolder)))
+	mux.Handle("/apifolders", jwtMiddleware(http.HandlerFunc(apiHandler.HandleFolder))) // The android app want's the address like this, will be fixed in the next version. Issue #174
+	mux.Handle("/api/sync", jwtMiddleware(http.HandlerFunc(apiHandler.HandleSync)))
 
-	mux.Handle("/api/ciphers/import", jwtMiddleware(http.HandlerFunc(handleImport)))
-	mux.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(handleCipher)))
-	mux.Handle("/api/ciphers/", jwtMiddleware(http.HandlerFunc(handleCipherUpdate)))
+	mux.Handle("/api/ciphers/import", jwtMiddleware(http.HandlerFunc(apiHandler.HandleImport)))
+	mux.Handle("/api/ciphers", jwtMiddleware(http.HandlerFunc(apiHandler.HandleCipher)))
+	mux.Handle("/api/ciphers/", jwtMiddleware(http.HandlerFunc(apiHandler.HandleCipherUpdate)))
 
 	log.Println("Starting server on " + serverAddr)
 	handler := cors.New(cors.Options{
