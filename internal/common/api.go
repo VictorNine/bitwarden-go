@@ -22,7 +22,7 @@ func NewAPI(db Database) APIHandler {
 }
 
 func (h *APIHandler) HandleKeysUpdate(w http.ResponseWriter, req *http.Request) {
-	email := req.Context().Value(ctxKey("email")).(string)
+	email := GetEmail(req)
 
 	acc, err := h.db.GetAccount(email, "")
 	if err != nil {
@@ -45,7 +45,7 @@ func (h *APIHandler) HandleKeysUpdate(w http.ResponseWriter, req *http.Request) 
 }
 
 func (h *APIHandler) HandleProfile(w http.ResponseWriter, req *http.Request) {
-	email := req.Context().Value(ctxKey("email")).(string)
+	email := GetEmail(req)
 	log.Println("Profile requested")
 
 	acc, err := h.db.GetAccount(email, "")
@@ -76,7 +76,7 @@ func (h *APIHandler) HandleCollections(w http.ResponseWriter, req *http.Request)
 }
 
 func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
-	email := req.Context().Value(ctxKey("email")).(string)
+	email := GetEmail(req)
 
 	log.Println(email + " is trying to add data")
 
@@ -124,7 +124,7 @@ func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 
 // This function handles updates and deleteing
 func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request) {
-	email := req.Context().Value(ctxKey("email")).(string)
+	email := GetEmail(req)
 	log.Println(email + " is trying to edit his data")
 
 	// Get the cipher id
@@ -198,7 +198,7 @@ func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request
 }
 
 func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
-	email := req.Context().Value(ctxKey("email")).(string)
+	email := GetEmail(req)
 
 	log.Println(email + " is trying to sync")
 
@@ -255,7 +255,7 @@ func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
 // Only handles ciphers
 // TODO: handle folders and folderRelationships
 func (h *APIHandler) HandleImport(w http.ResponseWriter, req *http.Request) {
-	email := req.Context().Value(ctxKey("email")).(string)
+	email := GetEmail(req)
 
 	log.Println(email + " is trying to import data")
 
@@ -293,7 +293,7 @@ func (h *APIHandler) HandleImport(w http.ResponseWriter, req *http.Request) {
 }
 
 func (h *APIHandler) HandleFolder(w http.ResponseWriter, req *http.Request) {
-	email := req.Context().Value(ctxKey("email")).(string)
+	email := GetEmail(req)
 
 	log.Println(email + " is trying to add a new folder")
 

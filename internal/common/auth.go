@@ -227,6 +227,10 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 type ctxKey string
 
+func GetEmail(req *http.Request) string {
+	return req.Context().Value(ctxKey("email")).(string)
+}
+
 func (auth *Auth) JwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var tokenString string
