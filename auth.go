@@ -18,13 +18,17 @@ import (
 )
 
 type Auth struct {
-	db database
+	db         database
+	signingKey []byte
+	jwtExpire  int
 }
 
 // TODO: rename to New() when when moved to sep pkg
-func newAuth(db database) Auth {
+func newAuth(db database, signingKey []byte, jwtExpire int) Auth {
 	auth := Auth{
-		db: db,
+		db:         db,
+		signingKey: signingKey,
+		jwtExpire:  jwtExpire,
 	}
 
 	return auth
@@ -181,16 +185,16 @@ func (auth *Auth) handleLogin(w http.ResponseWriter, req *http.Request) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["nbf"] = time.Now().Unix()
-	claims["exp"] = time.Now().Add(time.Second * time.Duration(jwtExpire)).Unix()
+	claims["exp"] = time.Now().Add(time.Second * time.Duration(auth.jwtExpire)).Unix()
 	claims["iss"] = "NA"
 	claims["sub"] = "NA"
 	claims["email"] = acc.Email
 	claims["name"] = acc.Name
 	claims["premium"] = false
-	tokenString, _ := token.SignedString(mySigningKey)
+	tokenString, _ := token.SignedString(auth.signingKey)
 
 	rtoken := resToken{AccessToken: tokenString,
-		ExpiresIn:    jwtExpire,
+		ExpiresIn:    auth.jwtExpire,
 		TokenType:    "Bearer",
 		RefreshToken: acc.RefreshToken,
 		Key:          acc.Key,
@@ -223,7 +227,7 @@ func (auth *Auth) handleLogin(w http.ResponseWriter, req *http.Request) {
 
 type ctxKey string
 
-func jwtMiddleware(next http.Handler) http.Handler {
+func (auth *Auth) JwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var tokenString string
 
@@ -243,7 +247,7 @@ func jwtMiddleware(next http.Handler) http.Handler {
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 			}
 
-			return mySigningKey, nil
+			return auth.signingKey, nil
 		})
 
 		if err != nil {
