@@ -121,16 +121,16 @@ type Data struct {
 // Interface to make testing easier
 type Database interface {
 	Init() error
-	addAccount(acc Account) error
-	getAccount(username string, refreshtoken string) (Account, error)
-	updateAccountInfo(acc Account) error
-	getCipher(owner string, ciphID string) (Cipher, error)
-	getCiphers(owner string) ([]Cipher, error)
-	newCipher(ciph Cipher, owner string) (Cipher, error)
-	updateCipher(newData Cipher, owner string, ciphID string) error
-	deleteCipher(owner string, ciphID string) error
+	AddAccount(acc Account) error
+	GetAccount(username string, refreshtoken string) (Account, error)
+	UpdateAccountInfo(acc Account) error
+	GetCipher(owner string, ciphID string) (Cipher, error)
+	GetCiphers(owner string) ([]Cipher, error)
+	NewCipher(ciph Cipher, owner string) (Cipher, error)
+	UpdateCipher(newData Cipher, owner string, ciphID string) error
+	DeleteCipher(owner string, ciphID string) error
 	Open() error
 	Close()
-	addFolder(name string, owner string) (Folder, error)
-	getFolders(owner string) ([]Folder, error)
+	AddFolder(name string, owner string) (Folder, error)
+	GetFolders(owner string) ([]Folder, error)
 }

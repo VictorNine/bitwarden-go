@@ -67,7 +67,7 @@ func (auth *Auth) HandleRegister(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = auth.db.addAccount(acc)
+	err = auth.db.AddAccount(acc)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(http.StatusText(500)))
@@ -129,7 +129,7 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		acc, err = auth.db.getAccount("", rrefreshToken)
+		acc, err = auth.db.GetAccount("", rrefreshToken)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))
@@ -150,7 +150,7 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 		log.Println(username + " is trying to login")
 
-		acc, err = auth.db.getAccount(username, "")
+		acc, err = auth.db.GetAccount(username, "")
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))
@@ -172,7 +172,7 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 	if acc.RefreshToken == "" {
 		// Create refreshtoken and store in db
 		acc.RefreshToken = createRefreshToken()
-		err = auth.db.updateAccountInfo(acc)
+		err = auth.db.UpdateAccountInfo(acc)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))

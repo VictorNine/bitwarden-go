@@ -24,7 +24,7 @@ func NewAPI(db Database) APIHandler {
 func (h *APIHandler) HandleKeysUpdate(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 
-	acc, err := h.db.getAccount(email, "")
+	acc, err := h.db.GetAccount(email, "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,14 +41,14 @@ func (h *APIHandler) HandleKeysUpdate(w http.ResponseWriter, req *http.Request) 
 
 	acc.KeyPair = kp
 
-	h.db.updateAccountInfo(acc)
+	h.db.UpdateAccountInfo(acc)
 }
 
 func (h *APIHandler) HandleProfile(w http.ResponseWriter, req *http.Request) {
 	email := req.Context().Value(ctxKey("email")).(string)
 	log.Println("Profile requested")
 
-	acc, err := h.db.getAccount(email, "")
+	acc, err := h.db.GetAccount(email, "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 
 	log.Println(email + " is trying to add data")
 
-	acc, err := h.db.getAccount(email, "")
+	acc, err := h.db.GetAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -94,7 +94,7 @@ func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// Store the new cipher object in db
-		newCiph, err := h.db.newCipher(rCiph, acc.Id)
+		newCiph, err := h.db.NewCipher(rCiph, acc.Id)
 		if err != nil {
 			log.Fatal("newCipher error" + err.Error())
 		}
@@ -103,7 +103,7 @@ func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 			log.Fatal(err)
 		}
 	} else {
-		ciphs, err := h.db.getCiphers(acc.Id)
+		ciphs, err := h.db.GetCiphers(acc.Id)
 		if err != nil {
 			log.Println(err)
 		}
@@ -130,7 +130,7 @@ func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request
 	// Get the cipher id
 	id := strings.TrimPrefix(req.URL.Path, "/api/ciphers/")
 
-	acc, err := h.db.getAccount(email, "")
+	acc, err := h.db.GetAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -139,7 +139,7 @@ func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request
 	case "GET":
 		log.Println("GET Ciphers for " + acc.Id)
 		var data []byte
-		ciph, err := h.db.getCipher(acc.Id, id)
+		ciph, err := h.db.GetCipher(acc.Id, id)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -160,7 +160,7 @@ func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request
 		// Set correct ID
 		rCiph.Id = id
 
-		err = h.db.updateCipher(rCiph, acc.Id, id)
+		err = h.db.UpdateCipher(rCiph, acc.Id, id)
 		if err != nil {
 			w.Write([]byte("0"))
 			log.Println(err)
@@ -179,7 +179,7 @@ func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request
 		return
 
 	case "DELETE":
-		err := h.db.deleteCipher(acc.Id, id)
+		err := h.db.DeleteCipher(acc.Id, id)
 		if err != nil {
 			w.Write([]byte("0"))
 			log.Println(err)
@@ -202,7 +202,7 @@ func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
 
 	log.Println(email + " is trying to sync")
 
-	acc, err := h.db.getAccount(email, "")
+	acc, err := h.db.GetAccount(email, "")
 
 	prof := Profile{
 		Id:               acc.Id,
@@ -217,12 +217,12 @@ func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
 		Object:           "profile",
 	}
 
-	ciphs, err := h.db.getCiphers(acc.Id)
+	ciphs, err := h.db.GetCiphers(acc.Id)
 	if err != nil {
 		log.Println(err)
 	}
 
-	folders, err := h.db.getFolders(acc.Id)
+	folders, err := h.db.GetFolders(acc.Id)
 	if err != nil {
 		log.Println(err)
 	}
@@ -259,7 +259,7 @@ func (h *APIHandler) HandleImport(w http.ResponseWriter, req *http.Request) {
 
 	log.Println(email + " is trying to import data")
 
-	acc, err := h.db.getAccount(email, "")
+	acc, err := h.db.GetAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -283,7 +283,7 @@ func (h *APIHandler) HandleImport(w http.ResponseWriter, req *http.Request) {
 			log.Fatal(err.Error())
 		}
 
-		_, err = h.db.newCipher(c, acc.Id)
+		_, err = h.db.NewCipher(c, acc.Id)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -297,7 +297,7 @@ func (h *APIHandler) HandleFolder(w http.ResponseWriter, req *http.Request) {
 
 	log.Println(email + " is trying to add a new folder")
 
-	acc, err := h.db.getAccount(email, "")
+	acc, err := h.db.GetAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
@@ -316,7 +316,7 @@ func (h *APIHandler) HandleFolder(w http.ResponseWriter, req *http.Request) {
 		}
 		defer req.Body.Close()
 
-		folder, err := h.db.addFolder(folderData.Name, acc.Id)
+		folder, err := h.db.AddFolder(folderData.Name, acc.Id)
 		if err != nil {
 			log.Fatal("newFolder error" + err.Error())
 		}
@@ -326,7 +326,7 @@ func (h *APIHandler) HandleFolder(w http.ResponseWriter, req *http.Request) {
 			log.Fatal(err)
 		}
 	} else {
-		folders, err := h.db.getFolders(acc.Id)
+		folders, err := h.db.GetFolders(acc.Id)
 		if err != nil {
 			log.Println(err)
 		}

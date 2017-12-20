@@ -99,7 +99,7 @@ func sqlRowToCipher(row interface {
 	return ciph, nil
 }
 
-func (db *DB) getCipher(owner string, ciphID string) (Cipher, error) {
+func (db *DB) GetCipher(owner string, ciphID string) (Cipher, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return Cipher{}, err
@@ -115,7 +115,7 @@ func (db *DB) getCipher(owner string, ciphID string) (Cipher, error) {
 	return sqlRowToCipher(row)
 }
 
-func (db *DB) getCiphers(owner string) ([]Cipher, error) {
+func (db *DB) GetCiphers(owner string) ([]Cipher, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (db *DB) getCiphers(owner string) ([]Cipher, error) {
 	return ciphers, err
 }
 
-func (db *DB) newCipher(ciph Cipher, owner string) (Cipher, error) {
+func (db *DB) NewCipher(ciph Cipher, owner string) (Cipher, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return Cipher{}, err
@@ -171,7 +171,7 @@ func (db *DB) newCipher(ciph Cipher, owner string) (Cipher, error) {
 }
 
 // Important to check that the owner is correct before an update!
-func (db *DB) updateCipher(newData Cipher, owner string, ciphID string) error {
+func (db *DB) UpdateCipher(newData Cipher, owner string, ciphID string) error {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return err
@@ -206,7 +206,7 @@ func (db *DB) updateCipher(newData Cipher, owner string, ciphID string) error {
 }
 
 // Important to check that the owner is correct before an update!
-func (db *DB) deleteCipher(owner string, ciphID string) error {
+func (db *DB) DeleteCipher(owner string, ciphID string) error {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return err
@@ -229,7 +229,7 @@ func (db *DB) deleteCipher(owner string, ciphID string) error {
 	return nil
 }
 
-func (db *DB) addAccount(acc Account) error {
+func (db *DB) AddAccount(acc Account) error {
 	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key, refreshtoken, privatekey, pubkey) values(?,?,?,?,?,?,?,?)")
 	if err != nil {
 		return err
@@ -243,7 +243,7 @@ func (db *DB) addAccount(acc Account) error {
 	return nil
 }
 
-func (db *DB) updateAccountInfo(acc Account) error {
+func (db *DB) UpdateAccountInfo(acc Account) error {
 	id, err := strconv.ParseInt(acc.Id, 10, 64)
 	if err != nil {
 		return err
@@ -262,7 +262,7 @@ func (db *DB) updateAccountInfo(acc Account) error {
 	return nil
 }
 
-func (db *DB) getAccount(username string, refreshtoken string) (Account, error) {
+func (db *DB) GetAccount(username string, refreshtoken string) (Account, error) {
 	var row *sql.Row
 	acc := Account{}
 	acc.KeyPair = KeyPair{}
@@ -287,7 +287,7 @@ func (db *DB) getAccount(username string, refreshtoken string) (Account, error) 
 	return acc, nil
 }
 
-func (db *DB) addFolder(name string, owner string) (Folder, error) {
+func (db *DB) AddFolder(name string, owner string) (Folder, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return Folder{}, err
@@ -313,7 +313,7 @@ func (db *DB) addFolder(name string, owner string) (Folder, error) {
 	return folder, nil
 }
 
-func (db *DB) getFolders(owner string) ([]Folder, error) {
+func (db *DB) GetFolders(owner string) ([]Folder, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return nil, err
