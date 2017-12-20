@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -338,4 +339,68 @@ func (h *APIHandler) HandleFolder(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+// The data we get from the client. Only used to parse data
+type newCipher struct {
+	Type           int       `json:"type"`
+	FolderId       string    `json:"folderId"`
+	OrganizationId string    `json:"organizationId"`
+	Name           string    `json:"name"`
+	Notes          string    `json:"notes"`
+	Favorite       bool      `json:"favorite"`
+	Login          loginData `json:"login"`
+	Fields         string    `json:"fields"`
+}
+
+type loginData struct {
+	URI      string `json:"uri"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	ToTp     string `json:"totp"`
+}
+
+func (nciph *newCipher) toCipher() (Cipher, error) {
+	// Create new
+	cdata := CipherData{
+		Uri:      nciph.Login.URI,
+		Username: nciph.Login.Username,
+		Password: nciph.Login.Password,
+		Totp:     nil,
+		Name:     nciph.Name,
+		Notes:    new(string),
+		Fields:   nil,
+	}
+
+	(*cdata.Notes) = nciph.Notes
+
+	if *cdata.Notes == "" {
+		cdata.Notes = nil
+	}
+
+	ciph := Cipher{ // Only including the data we use when we store it
+		Type:     nciph.Type,
+		Data:     cdata,
+		Favorite: nciph.Favorite,
+	}
+
+	if nciph.FolderId != "" {
+		ciph.FolderId = &nciph.FolderId
+	}
+
+	return ciph, nil
+}
+
+// unmarshalCipher Take the recived bytes and make it a Cipher struct
+func unmarshalCipher(data io.ReadCloser) (Cipher, error) {
+	decoder := json.NewDecoder(data)
+	var nciph newCipher
+	err := decoder.Decode(&nciph)
+	if err != nil {
+		return Cipher{}, err
+	}
+
+	defer data.Close()
+
+	return nciph.toCipher()
 }
