@@ -12,16 +12,28 @@ import (
 )
 
 type APIHandler struct {
-	db bw.Database
+	db database
 }
 
-// TODO: Rewrite to new when moved to sep pkg
-func New(db bw.Database) APIHandler {
+func New(db database) APIHandler {
 	h := APIHandler{
 		db: db,
 	}
 
 	return h
+}
+
+// Interface to make testing easier
+type database interface {
+	GetAccount(username string, refreshtoken string) (bw.Account, error)
+	UpdateAccountInfo(acc bw.Account) error
+	GetCipher(owner string, ciphID string) (bw.Cipher, error)
+	GetCiphers(owner string) ([]bw.Cipher, error)
+	NewCipher(ciph bw.Cipher, owner string) (bw.Cipher, error)
+	UpdateCipher(newData bw.Cipher, owner string, ciphID string) error
+	DeleteCipher(owner string, ciphID string) error
+	AddFolder(name string, owner string) (bw.Folder, error)
+	GetFolders(owner string) ([]bw.Folder, error)
 }
 
 func (h *APIHandler) HandleKeysUpdate(w http.ResponseWriter, req *http.Request) {

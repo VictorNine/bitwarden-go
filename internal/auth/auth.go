@@ -20,12 +20,12 @@ import (
 )
 
 type Auth struct {
-	db         bw.Database
+	db         database
 	signingKey []byte
 	jwtExpire  int
 }
 
-func New(db bw.Database, signingKey []byte, jwtExpire int) Auth {
+func New(db database, signingKey []byte, jwtExpire int) Auth {
 	auth := Auth{
 		db:         db,
 		signingKey: signingKey,
@@ -33,6 +33,13 @@ func New(db bw.Database, signingKey []byte, jwtExpire int) Auth {
 	}
 
 	return auth
+}
+
+// Interface to make testing easier
+type database interface {
+	AddAccount(acc bw.Account) error
+	GetAccount(username string, refreshtoken string) (bw.Account, error)
+	UpdateAccountInfo(acc bw.Account) error
 }
 
 func reHashPassword(key, salt string) (string, error) {
