@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	bw "github.com/VictorNine/bitwarden-go/internal/common"
+	"github.com/VictorNine/bitwarden-go/internal/database/mock"
 )
 
 func TestHandleLogin(t *testing.T) {
@@ -22,7 +22,7 @@ func TestHandleLogin(t *testing.T) {
 	}
 
 	keyHash, _ := reHashPassword("sjlcxv1TSe1wTHoYF50WJL3X07oCFxqhXYFeGfrbtII=", "nobody@example.com")
-	db := &bw.MockDB{Username: "nobody@example.com", Password: keyHash, RefreshToken: "abcdef"}
+	db := &mock.MockDB{Username: "nobody@example.com", Password: keyHash, RefreshToken: "abcdef"}
 	authHandler := New(db, nil, 3600)
 
 	for _, c := range cases {

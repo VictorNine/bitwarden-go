@@ -65,7 +65,7 @@ type CipherData struct {
 	Fields   []string
 }
 
-func (data *CipherData) bytes() ([]byte, error) {
+func (data *CipherData) Bytes() ([]byte, error) {
 	b, err := json.Marshal(&data)
 	return b, err
 }

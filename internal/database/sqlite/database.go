@@ -1,4 +1,4 @@
-package common
+package sqlite
 
 import (
 	"database/sql"
@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	bw "github.com/VictorNine/bitwarden-go/internal/common"
 	_ "github.com/mattn/go-sqlite3"
 	uuid "github.com/satori/go.uuid"
 )
@@ -63,8 +64,8 @@ func (db *DB) Close() {
 
 func sqlRowToCipher(row interface {
 	Scan(dest ...interface{}) error
-}) (Cipher, error) {
-	ciph := Cipher{
+}) (bw.Cipher, error) {
+	ciph := bw.Cipher{
 		Favorite:            false,
 		Edit:                true,
 		OrganizationUseTotp: false,
@@ -99,14 +100,14 @@ func sqlRowToCipher(row interface {
 	return ciph, nil
 }
 
-func (db *DB) GetCipher(owner string, ciphID string) (Cipher, error) {
+func (db *DB) GetCipher(owner string, ciphID string) (bw.Cipher, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
-		return Cipher{}, err
+		return bw.Cipher{}, err
 	}
 	iciphID, err := strconv.ParseInt(ciphID, 10, 64)
 	if err != nil {
-		return Cipher{}, err
+		return bw.Cipher{}, err
 	}
 
 	query := "SELECT id, type, revisiondate, data, folderid, favorite FROM ciphers WHERE owner = $1 AND id = $2"
@@ -115,13 +116,13 @@ func (db *DB) GetCipher(owner string, ciphID string) (Cipher, error) {
 	return sqlRowToCipher(row)
 }
 
-func (db *DB) GetCiphers(owner string) ([]Cipher, error) {
+func (db *DB) GetCiphers(owner string) ([]bw.Cipher, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
-	var ciphers []Cipher
+	var ciphers []bw.Cipher
 	query := "SELECT id, type, revisiondate, data, folderid, favorite FROM ciphers WHERE owner = $1"
 	rows, err := db.db.Query(query, iowner)
 
@@ -135,15 +136,15 @@ func (db *DB) GetCiphers(owner string) ([]Cipher, error) {
 	}
 
 	if len(ciphers) < 1 {
-		ciphers = make([]Cipher, 0) // Make an empty slice if there are none or android app will crash
+		ciphers = make([]bw.Cipher, 0) // Make an empty slice if there are none or android app will crash
 	}
 	return ciphers, err
 }
 
-func (db *DB) NewCipher(ciph Cipher, owner string) (Cipher, error) {
+func (db *DB) NewCipher(ciph bw.Cipher, owner string) (bw.Cipher, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
-		return Cipher{}, err
+		return bw.Cipher{}, err
 	}
 
 	ciph.RevisionDate = time.Now()
@@ -153,7 +154,7 @@ func (db *DB) NewCipher(ciph Cipher, owner string) (Cipher, error) {
 		return ciph, err
 	}
 
-	data, err := ciph.Data.bytes()
+	data, err := ciph.Data.Bytes()
 	if err != nil {
 		return ciph, err
 	}
@@ -171,7 +172,7 @@ func (db *DB) NewCipher(ciph Cipher, owner string) (Cipher, error) {
 }
 
 // Important to check that the owner is correct before an update!
-func (db *DB) UpdateCipher(newData Cipher, owner string, ciphID string) error {
+func (db *DB) UpdateCipher(newData bw.Cipher, owner string, ciphID string) error {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return err
@@ -192,7 +193,7 @@ func (db *DB) UpdateCipher(newData Cipher, owner string, ciphID string) error {
 		return err
 	}
 
-	bdata, err := newData.Data.bytes()
+	bdata, err := newData.Data.Bytes()
 	if err != nil {
 		return err
 	}
@@ -229,7 +230,7 @@ func (db *DB) DeleteCipher(owner string, ciphID string) error {
 	return nil
 }
 
-func (db *DB) AddAccount(acc Account) error {
+func (db *DB) AddAccount(acc bw.Account) error {
 	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key, refreshtoken, privatekey, pubkey) values(?,?,?,?,?,?,?,?)")
 	if err != nil {
 		return err
@@ -243,7 +244,7 @@ func (db *DB) AddAccount(acc Account) error {
 	return nil
 }
 
-func (db *DB) UpdateAccountInfo(acc Account) error {
+func (db *DB) UpdateAccountInfo(acc bw.Account) error {
 	id, err := strconv.ParseInt(acc.Id, 10, 64)
 	if err != nil {
 		return err
@@ -262,10 +263,10 @@ func (db *DB) UpdateAccountInfo(acc Account) error {
 	return nil
 }
 
-func (db *DB) GetAccount(username string, refreshtoken string) (Account, error) {
+func (db *DB) GetAccount(username string, refreshtoken string) (bw.Account, error) {
 	var row *sql.Row
-	acc := Account{}
-	acc.KeyPair = KeyPair{}
+	acc := bw.Account{}
+	acc.KeyPair = bw.KeyPair{}
 	if username != "" {
 		query := "SELECT * FROM accounts WHERE email = $1"
 		row = db.db.QueryRow(query, username)
@@ -287,13 +288,13 @@ func (db *DB) GetAccount(username string, refreshtoken string) (Account, error) 
 	return acc, nil
 }
 
-func (db *DB) AddFolder(name string, owner string) (Folder, error) {
+func (db *DB) AddFolder(name string, owner string) (bw.Folder, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
-		return Folder{}, err
+		return bw.Folder{}, err
 	}
 
-	folder := Folder{
+	folder := bw.Folder{
 		Id:           uuid.NewV4().String(),
 		Name:         name,
 		Object:       "folder",
@@ -302,24 +303,24 @@ func (db *DB) AddFolder(name string, owner string) (Folder, error) {
 
 	stmt, err := db.db.Prepare("INSERT INTO folders(id, name, revisiondate, owner) values(?,?,?, ?)")
 	if err != nil {
-		return Folder{}, err
+		return bw.Folder{}, err
 	}
 
 	_, err = stmt.Exec(folder.Id, folder.Name, folder.RevisionDate.Unix(), iowner)
 	if err != nil {
-		return Folder{}, err
+		return bw.Folder{}, err
 	}
 
 	return folder, nil
 }
 
-func (db *DB) GetFolders(owner string) ([]Folder, error) {
+func (db *DB) GetFolders(owner string) ([]bw.Folder, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
-	var folders []Folder
+	var folders []bw.Folder
 	query := "SELECT id, name, revisiondate FROM folders WHERE owner = $1"
 	rows, err := db.db.Query(query, iowner)
 	if err != nil {
@@ -328,7 +329,7 @@ func (db *DB) GetFolders(owner string) ([]Folder, error) {
 
 	var revDate int64
 	for rows.Next() {
-		f := Folder{}
+		f := bw.Folder{}
 		err := rows.Scan(&f.Id, &f.Name, &revDate)
 		if err != nil {
 			return nil, err
@@ -339,7 +340,7 @@ func (db *DB) GetFolders(owner string) ([]Folder, error) {
 	}
 
 	if len(folders) < 1 {
-		folders = make([]Folder, 0) // Make an empty slice if there are none or android app will crash
+		folders = make([]bw.Folder, 0) // Make an empty slice if there are none or android app will crash
 	}
 	return folders, err
 }
