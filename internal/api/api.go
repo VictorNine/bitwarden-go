@@ -437,11 +437,11 @@ type loginData struct {
 func (nciph *newCipher) toCipher() (bw.Cipher, error) {
 	// Create new
 	cdata := bw.CipherData{
-		Uri:      nciph.Login.URI,
-		Username: nciph.Login.Username,
-		Password: nciph.Login.Password,
+		Uri:      &nciph.Login.URI,
+		Username: &nciph.Login.Username,
+		Password: &nciph.Login.Password,
 		Totp:     nil,
-		Name:     nciph.Name,
+		Name:     &nciph.Name,
 		Notes:    new(string),
 		Fields:   nil,
 	}
@@ -450,6 +450,22 @@ func (nciph *newCipher) toCipher() (bw.Cipher, error) {
 
 	if *cdata.Notes == "" {
 		cdata.Notes = nil
+	}
+
+	if *cdata.Uri == "" {
+		cdata.Uri = nil
+	}
+
+	if *cdata.Username == "" {
+		cdata.Username = nil
+	}
+
+	if *cdata.Password == "" {
+		cdata.Password = nil
+	}
+
+	if *cdata.Name == "" {
+		cdata.Name = nil
 	}
 
 	ciph := bw.Cipher{ // Only including the data we use when we store it

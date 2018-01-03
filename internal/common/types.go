@@ -56,11 +56,11 @@ type Cipher struct {
 }
 
 type CipherData struct {
-	Uri      string
-	Username string
-	Password string
+	Uri      *string
+	Username *string
+	Password *string
 	Totp     *string // Must be pointer to output null in json. Android app will crash if not null
-	Name     string
+	Name     *string
 	Notes    *string // Must be pointer to output null in json. Android app will crash if not null
 	Fields   []string
 }
