@@ -23,7 +23,7 @@ func TestHandleLogin(t *testing.T) {
 
 	keyHash, _ := reHashPassword("sjlcxv1TSe1wTHoYF50WJL3X07oCFxqhXYFeGfrbtII=", "nobody@example.com")
 	db := &mock.MockDB{Username: "nobody@example.com", Password: keyHash, RefreshToken: "abcdef"}
-	authHandler := New(db, nil, 3600)
+	authHandler := New(db, "", 3600)
 
 	for _, c := range cases {
 		req, err := http.NewRequest("POST", "/identity/connect/token", strings.NewReader(c.data.Encode()))

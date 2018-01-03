@@ -7,30 +7,33 @@ import (
 
 	"github.com/VictorNine/bitwarden-go/internal/api"
 	"github.com/VictorNine/bitwarden-go/internal/auth"
+	"github.com/VictorNine/bitwarden-go/internal/config"
 	"github.com/rs/cors"
 )
 
 func main() {
+	cfg := config.Read()
+
 	initDB := flag.Bool("init", false, "Initialize the database")
 	flag.Parse()
 
-	err := db.Open()
+	err := config.DB.Open()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer db.Close()
+	defer config.DB.Close()
 
 	// Create a new database
 	if *initDB {
-		err := db.Init()
+		err := config.DB.Init()
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	authHandler := auth.New(db, mySigningKey, jwtExpire)
-	apiHandler := api.New(db)
+	authHandler := auth.New(config.DB, cfg.SigningKey, cfg.JwtExpire)
+	apiHandler := api.New(config.DB)
 
 	mux := http.NewServeMux()
 
@@ -49,11 +52,11 @@ func main() {
 	mux.Handle("/api/ciphers", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipher)))
 	mux.Handle("/api/ciphers/", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipherUpdate)))
 
-	log.Println("Starting server on " + serverAddr)
+	log.Println("Starting server on " + cfg.ServerAddr + cfg.ServerPort)
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"Authorization"},
 	}).Handler(mux)
-	http.ListenAndServe(serverAddr, handler)
+	log.Fatal(http.ListenAndServe(cfg.ServerAddr+cfg.ServerPort, handler))
 }

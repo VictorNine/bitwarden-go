@@ -21,11 +21,11 @@ import (
 
 type Auth struct {
 	db         database
-	signingKey []byte
+	signingKey string
 	jwtExpire  int
 }
 
-func New(db database, signingKey []byte, jwtExpire int) Auth {
+func New(db database, signingKey string, jwtExpire int) Auth {
 	auth := Auth{
 		db:         db,
 		signingKey: signingKey,

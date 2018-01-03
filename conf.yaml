@@ -1,0 +1,11 @@
+#Signing Key
+signingKey: "secret"
+
+#The ammount of time in seconds that the JSON Web Tokens should expire in.
+jwtExpire:  3600
+
+#The server address to bind too. Leaving this empty ("") will bind to all available interfaces
+serverAddr: ""
+
+#The server port to use. By default, port 8000 is used.
+serverPort: 8000
