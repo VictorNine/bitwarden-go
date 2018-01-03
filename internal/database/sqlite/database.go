@@ -314,6 +314,25 @@ func (db *DB) AddFolder(name string, owner string) (bw.Folder, error) {
 	return folder, nil
 }
 
+func (db *DB) UpdateFolder(newFolder bw.Folder, owner string) error {
+	iowner, err := strconv.ParseInt(owner, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	stmt, err := db.db.Prepare("UPDATE folders SET name=$1, revisiondate=$2 WHERE id=$3 AND owner=$4")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(newFolder.Name, newFolder.RevisionDate.Unix(), newFolder.Id, iowner)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *DB) GetFolders(owner string) ([]bw.Folder, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {

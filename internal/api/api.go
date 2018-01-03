@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/VictorNine/bitwarden-go/internal/auth"
 	bw "github.com/VictorNine/bitwarden-go/internal/common"
@@ -33,6 +34,7 @@ type database interface {
 	UpdateCipher(newData bw.Cipher, owner string, ciphID string) error
 	DeleteCipher(owner string, ciphID string) error
 	AddFolder(name string, owner string) (bw.Folder, error)
+	UpdateFolder(newFolder bw.Folder, owner string) error
 	GetFolders(owner string) ([]bw.Folder, error)
 }
 
@@ -354,6 +356,63 @@ func (h *APIHandler) HandleFolder(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+func (h *APIHandler) HandleFolderUpdate(w http.ResponseWriter, req *http.Request) {
+	email := auth.GetEmail(req)
+
+	log.Println(email + " is trying to update a folder")
+
+	acc, err := h.db.GetAccount(email, "")
+	if err != nil {
+		log.Fatal("Account lookup " + err.Error())
+	}
+
+	switch req.Method {
+	case "POST":
+		fallthrough // Do same as PUT. Web Vault wants to post
+	case "PUT":
+		// Get the folder id
+		folderID := strings.TrimPrefix(req.URL.Path, "/api/folders/")
+
+		decoder := json.NewDecoder(req.Body)
+
+		var folderData struct {
+			Name string `json:"name"`
+		}
+
+		err := decoder.Decode(&folderData)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer req.Body.Close()
+
+		newFolder := bw.Folder{
+			Id:           folderID,
+			Name:         folderData.Name,
+			RevisionDate: time.Now().UTC(),
+			Object:       "folder",
+		}
+
+		err = h.db.UpdateFolder(newFolder, acc.Id)
+		if err != nil {
+			w.Write([]byte("0"))
+			log.Println(err)
+			return
+		}
+
+		// Send response
+		data, err := json.Marshal(&newFolder)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+		log.Println("Folder " + folderID + " updated")
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
 }
 
 // The data we get from the client. Only used to parse data
