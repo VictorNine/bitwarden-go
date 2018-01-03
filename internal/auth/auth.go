@@ -21,14 +21,14 @@ import (
 
 type Auth struct {
 	db         database
-	signingKey string
+	signingKey []byte
 	jwtExpire  int
 }
 
 func New(db database, signingKey string, jwtExpire int) Auth {
 	auth := Auth{
 		db:         db,
-		signingKey: signingKey,
+		signingKey: []byte(signingKey),
 		jwtExpire:  jwtExpire,
 	}
 
