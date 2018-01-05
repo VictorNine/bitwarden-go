@@ -12,10 +12,11 @@ import (
 )
 
 func main() {
-	cfg := config.Read()
-
 	initDB := flag.Bool("init", false, "Initialize the database")
+	configFile := flag.String("conf","../../conf.yaml","Location of the config file. Default: ../../conf.yaml")
 	flag.Parse()
+
+	cfg := config.Read(*configFile)
 
 	err := config.DB.Open()
 	if err != nil {

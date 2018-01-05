@@ -19,8 +19,8 @@ func hasColon(s string) bool {
 	return strings.LastIndex(s, ":") > -1
 }
 
-func Read() *Conf {
-	yamlFile, err := ioutil.ReadFile("../../conf.yaml")
+func Read(configFile string) *Conf {
+	yamlFile, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		log.Println(err)
 	}
