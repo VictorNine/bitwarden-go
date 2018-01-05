@@ -294,8 +294,13 @@ func (db *DB) AddFolder(name string, owner string) (bw.Folder, error) {
 		return bw.Folder{}, err
 	}
 
+	newFolderID, err := uuid.NewV4()
+	if err != nil {
+		return bw.Folder{}, err
+	}
+
 	folder := bw.Folder{
-		Id:           uuid.NewV4().String(),
+		Id:           newFolderID.String(),
 		Name:         name,
 		Object:       "folder",
 		RevisionDate: time.Now(),
