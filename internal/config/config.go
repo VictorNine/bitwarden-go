@@ -2,17 +2,19 @@ package config
 
 import "github.com/VictorNine/bitwarden-go/internal/database/sqlite"
 import (
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Conf struct {
-	SigningKey string `yaml:"signingKey"`
-	JwtExpire  int    `yaml:"jwtExpire"`
-	ServerAddr string `yaml:"serverAddr"`
-	ServerPort string `yaml:"serverPort"`
+	SigningKey          string `yaml:"signingKey"`
+	JwtExpire           int    `yaml:"jwtExpire"`
+	ServerAddr          string `yaml:"serverAddr"`
+	ServerPort          string `yaml:"serverPort"`
+	DisableRegistration bool   `yaml:"disableRegistration"`
 }
 
 func hasColon(s string) bool {

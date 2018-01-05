@@ -38,7 +38,9 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/accounts/register", authHandler.HandleRegister)
+	if cfg.DisableRegistration == false {
+		mux.HandleFunc("/api/accounts/register", authHandler.HandleRegister)
+	}
 	mux.HandleFunc("/identity/connect/token", authHandler.HandleLogin)
 
 	mux.Handle("/api/accounts/keys", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleKeysUpdate)))

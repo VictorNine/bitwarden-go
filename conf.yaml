@@ -9,3 +9,6 @@ serverAddr: ""
 
 #The server port to use. By default, port 8000 is used.
 serverPort: 8000
+
+# Disable the registration endpoint
+disableRegistration: false
