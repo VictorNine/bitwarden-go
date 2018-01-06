@@ -7,38 +7,53 @@ import (
 
 	"github.com/VictorNine/bitwarden-go/internal/api"
 	"github.com/VictorNine/bitwarden-go/internal/auth"
-	"github.com/VictorNine/bitwarden-go/internal/config"
+	"github.com/VictorNine/bitwarden-go/internal/database/sqlite"
 	"github.com/rs/cors"
 )
 
+var cfg struct {
+	initDB              bool
+	signingKey          string
+	jwtExpire           int
+	hostAddr            string
+	hostPort            string
+	disableRegistration bool
+}
+
+func init() {
+	flag.BoolVar(&cfg.initDB, "init", false, "Initalizes the database.")
+	flag.StringVar(&cfg.signingKey, "key", "secret", "Sets the signing key")
+	flag.IntVar(&cfg.jwtExpire, "tokenTime", 3600, "Sets the ammount of time (in seconds) the generated JSON Web Tokens will last before expiry.")
+	flag.StringVar(&cfg.hostAddr, "host", "", "Sets the interface that the application will listen on.")
+	flag.StringVar(&cfg.hostPort, "port", "8000", "Sets the port")
+	flag.BoolVar(&cfg.disableRegistration, "disableRegistration", false, "Disables user registration.")
+}
+
 func main() {
-	initDB := flag.Bool("init", false, "Initialize the database")
-	configFile := flag.String("conf","../../conf.yaml","Location of the config file. Default: ../../conf.yaml")
+	db := &sqlite.DB{}
 	flag.Parse()
 
-	cfg := config.Read(*configFile)
-
-	err := config.DB.Open()
+	err := db.Open()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer config.DB.Close()
+	defer db.Close()
 
 	// Create a new database
-	if *initDB {
-		err := config.DB.Init()
+	if cfg.initDB {
+		err := db.Init()
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	authHandler := auth.New(config.DB, cfg.SigningKey, cfg.JwtExpire)
-	apiHandler := api.New(config.DB)
+	authHandler := auth.New(db, cfg.signingKey, cfg.jwtExpire)
+	apiHandler := api.New(db)
 
 	mux := http.NewServeMux()
 
-	if cfg.DisableRegistration == false {
+	if cfg.disableRegistration == false {
 		mux.HandleFunc("/api/accounts/register", authHandler.HandleRegister)
 	}
 	mux.HandleFunc("/identity/connect/token", authHandler.HandleLogin)
@@ -55,11 +70,11 @@ func main() {
 	mux.Handle("/api/ciphers", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipher)))
 	mux.Handle("/api/ciphers/", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipherUpdate)))
 
-	log.Println("Starting server on " + cfg.ServerAddr + cfg.ServerPort)
+	log.Println("Starting server on " + cfg.hostAddr + ":" + cfg.hostPort)
 	handler := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"Authorization"},
 	}).Handler(mux)
-	log.Fatal(http.ListenAndServe(cfg.ServerAddr+cfg.ServerPort, handler))
+	log.Fatal(http.ListenAndServe(cfg.hostAddr+":"+cfg.hostPort, handler))
 }
