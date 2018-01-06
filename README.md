@@ -49,3 +49,9 @@ To run [bitwarden-go](https://github.com/VictorNine/bitwarden-go), run the follo
 ```
 bitwarden-go
 ```
+
+#### Usage with Flags
+To see all current flags and options with the application, run
+```
+bitwarden-go -h
+```
