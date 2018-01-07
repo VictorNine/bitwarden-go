@@ -241,17 +241,16 @@ func GetEmail(req *http.Request) string {
 
 func (auth *Auth) JwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		var tokenString string
-
 		tokens, ok := req.Header["Authorization"]
-		if !ok {
-			// hack in web-app to use Content-Language
-			tokens, ok = req.Header["Content-Language"]
+		if !ok && len(tokens) < 1 {
+			log.Println("Missing auth header")
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(http.StatusText(401)))
+			return
 		}
-		if ok && len(tokens) >= 1 {
-			tokenString = tokens[0]
-			tokenString = strings.TrimPrefix(tokenString, "Bearer ")
-		}
+
+		tokenString := tokens[0]
+		tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			// Don't forget to validate the alg is what you expect:

@@ -9,7 +9,6 @@ import (
 	"github.com/VictorNine/bitwarden-go/internal/auth"
 	"github.com/VictorNine/bitwarden-go/internal/common"
 	"github.com/VictorNine/bitwarden-go/internal/database/sqlite"
-	"github.com/rs/cors"
 )
 
 var cfg struct {
@@ -79,10 +78,5 @@ func main() {
 	}
 
 	log.Println("Starting server on " + cfg.hostAddr + ":" + cfg.hostPort)
-	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowCredentials: true,
-		AllowedHeaders:   []string{"Authorization"},
-	}).Handler(mux)
-	log.Fatal(http.ListenAndServe(cfg.hostAddr+":"+cfg.hostPort, handler))
+	log.Fatal(http.ListenAndServe(cfg.hostAddr+":"+cfg.hostPort, mux))
 }
