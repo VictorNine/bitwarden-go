@@ -7,6 +7,7 @@ import (
 
 	"github.com/VictorNine/bitwarden-go/internal/api"
 	"github.com/VictorNine/bitwarden-go/internal/auth"
+	"github.com/VictorNine/bitwarden-go/internal/common"
 	"github.com/VictorNine/bitwarden-go/internal/database/sqlite"
 	"github.com/rs/cors"
 )
@@ -18,6 +19,7 @@ var cfg struct {
 	hostAddr            string
 	hostPort            string
 	disableRegistration bool
+	vaultURL            string
 }
 
 func init() {
@@ -26,6 +28,7 @@ func init() {
 	flag.IntVar(&cfg.jwtExpire, "tokenTime", 3600, "Sets the ammount of time (in seconds) the generated JSON Web Tokens will last before expiry.")
 	flag.StringVar(&cfg.hostAddr, "host", "", "Sets the interface that the application will listen on.")
 	flag.StringVar(&cfg.hostPort, "port", "8000", "Sets the port")
+	flag.StringVar(&cfg.vaultURL, "vaultURL", "", "Sets the vault proxy url")
 	flag.BoolVar(&cfg.disableRegistration, "disableRegistration", false, "Disables user registration.")
 }
 
@@ -69,6 +72,11 @@ func main() {
 	mux.Handle("/api/ciphers/import", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleImport)))
 	mux.Handle("/api/ciphers", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipher)))
 	mux.Handle("/api/ciphers/", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipherUpdate)))
+
+	if len(cfg.vaultURL) > 4 {
+		proxy := common.Proxy{VaultURL: cfg.vaultURL}
+		mux.Handle("/", http.HandlerFunc(proxy.Handler))
+	}
 
 	log.Println("Starting server on " + cfg.hostAddr + ":" + cfg.hostPort)
 	handler := cors.New(cors.Options{
