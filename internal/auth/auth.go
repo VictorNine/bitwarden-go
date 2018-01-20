@@ -16,6 +16,7 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgryski/dgoogauth"
 
 	bw "github.com/VictorNine/bitwarden-go/internal/common"
 )
@@ -166,6 +167,44 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 			w.Write([]byte(http.StatusText(401)))
 			log.Println(err)
 			return
+		}
+
+		if len(acc.TwoFactorSecret) > 0 {
+			code, ok := req.PostForm["twoFactorToken"]
+			if !ok {
+				resp := struct {
+					Error               string `json:"error"`
+					ErrorDescription    string `json:"error_description"`
+					TwoFactorProviders  []int
+					TwoFactorProviders2 map[string]*int
+				}{
+					Error:               "invalid_grant",
+					ErrorDescription:    "Two factor required.",
+					TwoFactorProviders:  []int{0},
+					TwoFactorProviders2: make(map[string]*int),
+				}
+				resp.TwoFactorProviders2["0"] = nil
+
+				data, _ := json.Marshal(&resp)
+
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write(data)
+				return
+			}
+
+			otpc := &dgoogauth.OTPConfig{
+				Secret:      acc.TwoFactorSecret,
+				WindowSize:  3,
+				HotpCounter: 0,
+			}
+
+			authenticated, err := otpc.Authenticate(code[0])
+			if err != nil || !authenticated {
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(http.StatusText(401)))
+			}
+
 		}
 	}
 

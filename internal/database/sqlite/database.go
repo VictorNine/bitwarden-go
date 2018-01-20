@@ -278,14 +278,9 @@ func (db *DB) GetAccount(username string, refreshtoken string) (bw.Account, erro
 	}
 
 	var iid int
-	var tfaSecret string
-	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key, &acc.RefreshToken, &acc.KeyPair.EncryptedPrivateKey, &acc.KeyPair.PublicKey, &tfaSecret)
+	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key, &acc.RefreshToken, &acc.KeyPair.EncryptedPrivateKey, &acc.KeyPair.PublicKey, &acc.TwoFactorSecret)
 	if err != nil {
 		return acc, err
-	}
-
-	if len(tfaSecret) > 0 {
-		acc.TwoFactorEnabled = true
 	}
 
 	acc.Id = strconv.Itoa(iid)
