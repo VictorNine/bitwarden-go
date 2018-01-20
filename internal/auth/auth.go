@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -158,20 +159,11 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 		log.Println(username + " is trying to login")
 
-		acc, err = auth.db.GetAccount(username, "")
+		acc, err = checkPassword(auth.db, username, passwordHash)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))
-			log.Println("Account not found")
-			return
-		}
-
-		reHash, _ := reHashPassword(passwordHash, acc.Email)
-
-		if acc.MasterPasswordHash != reHash {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(http.StatusText(401)))
-			log.Println("Login attempt failed")
+			log.Println(err)
 			return
 		}
 	}
@@ -281,4 +273,19 @@ func (auth *Auth) JwtMiddleware(next http.Handler) http.Handler {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(http.StatusText(401)))
 	})
+}
+
+func checkPassword(db database, username, passwordHash string) (bw.Account, error) {
+	acc, err := db.GetAccount(username, "")
+	if err != nil {
+		return bw.Account{}, errors.New("Account not found")
+	}
+
+	reHash, _ := reHashPassword(passwordHash, acc.Email)
+
+	if acc.MasterPasswordHash != reHash {
+		return bw.Account{}, errors.New("Login attempt failed")
+	}
+
+	return acc, nil
 }
