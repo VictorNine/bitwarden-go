@@ -63,3 +63,7 @@ func (db *MockDB) AddFolder(name string, owner string) (bw.Folder, error) {
 func (db *MockDB) GetFolders(owner string) ([]bw.Folder, error) {
 	return nil, nil
 }
+
+func (db *MockDB) Update2FAsecret(secret string, email string) error {
+	return nil
+}

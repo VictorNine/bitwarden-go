@@ -19,6 +19,7 @@ type Account struct {
 	Key                string  `json:"key"`
 	KeyPair            KeyPair `json:"keys"`
 	RefreshToken       string  `json:"-"`
+	TwoFactorEnabled   bool    `json:"-"`
 }
 
 func (acc Account) GetProfile() Profile {
@@ -29,7 +30,7 @@ func (acc Account) GetProfile() Profile {
 		EmailVerified:      false,
 		Premium:            false,
 		Culture:            "en-US",
-		TwoFactorEnabled:   false,
+		TwoFactorEnabled:   acc.TwoFactorEnabled,
 		Key:                acc.Key,
 		SecurityStamp:      nil,
 		Organizations:      make([]string, 0),

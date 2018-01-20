@@ -41,6 +41,7 @@ type database interface {
 	AddAccount(acc bw.Account) error
 	GetAccount(username string, refreshtoken string) (bw.Account, error)
 	UpdateAccountInfo(acc bw.Account) error
+	Update2FAsecret(secret string, email string) error
 }
 
 func reHashPassword(key, salt string) (string, error) {
