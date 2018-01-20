@@ -172,6 +172,9 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 		if len(acc.TwoFactorSecret) > 0 {
 			code, ok := req.PostForm["twoFactorToken"]
 			if !ok {
+				code, ok = req.PostForm["TwoFactorToken"] // Android is differenct from web and browser
+			}
+			if !ok {
 				resp := struct {
 					Error               string `json:"error"`
 					ErrorDescription    string `json:"error_description"`
