@@ -236,7 +236,7 @@ func (db *DB) AddAccount(acc bw.Account) error {
 		return err
 	}
 
-	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key, "", "", "")
+	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key, "", "", "", "")
 	if err != nil {
 		return err
 	}
