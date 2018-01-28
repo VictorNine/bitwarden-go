@@ -287,7 +287,7 @@ func (auth *Auth) JwtMiddleware(next http.Handler) http.Handler {
 func checkPassword(db database, username, passwordHash string) (bw.Account, error) {
 	acc, err := db.GetAccount(username, "")
 	if err != nil {
-		return bw.Account{}, errors.New("Account not found")
+		return bw.Account{}, err
 	}
 
 	reHash, _ := reHashPassword(passwordHash, acc.Email)
