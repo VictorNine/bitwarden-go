@@ -42,7 +42,7 @@ Run the following to initalize the database:
 ```
 bitwarden-go -init
 ```
-This will create a database called ```db``` in the directory of the application.
+This will create a database called ```db``` in the directory of the application. Use `-location` to set a different directory for the database.
 
 #### Running
 To run [bitwarden-go](https://github.com/VictorNine/bitwarden-go), run the following in the terminal:
