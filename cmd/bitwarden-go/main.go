@@ -13,6 +13,7 @@ import (
 
 var cfg struct {
 	initDB              bool
+	location            string
 	signingKey          string
 	jwtExpire           int
 	hostAddr            string
@@ -23,6 +24,7 @@ var cfg struct {
 
 func init() {
 	flag.BoolVar(&cfg.initDB, "init", false, "Initalizes the database.")
+	flag.StringVar(&cfg.location, "location", "", "Sets the directory for the database")
 	flag.StringVar(&cfg.signingKey, "key", "secret", "Sets the signing key")
 	flag.IntVar(&cfg.jwtExpire, "tokenTime", 3600, "Sets the ammount of time (in seconds) the generated JSON Web Tokens will last before expiry.")
 	flag.StringVar(&cfg.hostAddr, "host", "", "Sets the interface that the application will listen on.")
@@ -35,6 +37,7 @@ func main() {
 	db := &sqlite.DB{}
 	flag.Parse()
 
+	db.SetDir(cfg.location)
 	err := db.Open()
 	if err != nil {
 		log.Fatal(err)
