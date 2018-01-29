@@ -16,6 +16,9 @@ func (db *MockDB) Init() error {
 	return nil
 }
 
+func (db *DB) SetDir(d string) {
+}
+
 func (db *MockDB) Open() error {
 	return nil
 }
