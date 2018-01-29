@@ -17,9 +17,9 @@ type DB struct {
 }
 
 func (db *DB) Init() error {
-	query1 := "CREATE TABLE \"accounts\" (`id`	INTEGER,`name`	TEXT,`email`	TEXT UNIQUE,`masterPasswordHash`	NUMERIC,`masterPasswordHint`	TEXT,`key`	TEXT,`refreshtoken`	TEXT,`privatekey`	TEXT NOT NULL,`pubkey`	TEXT NOT NULL,PRIMARY KEY(id))"
-	query2 := "CREATE TABLE \"ciphers\" (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,`type`	INTEGER,`revisiondate`	INTEGER,`data`	REAL,`owner`	INTEGER,`folderid`	TEXT,`favorite`	INTEGER NOT NULL)"
-	query3 := "CREATE TABLE \"folders\" (`id`	TEXT,	`name`	TEXT,	`revisiondate`	INTEGER,	`owner`	INTEGER, PRIMARY KEY(id))"
+	query1 := "CREATE TABLE IF NOT EXISTS \"accounts\" (`id`	INTEGER,`name`	TEXT,`email`	TEXT UNIQUE,`masterPasswordHash`	NUMERIC,`masterPasswordHint`	TEXT,`key`	TEXT,`refreshtoken`	TEXT,`privatekey`	TEXT NOT NULL,`pubkey`	TEXT NOT NULL,PRIMARY KEY(id))"
+	query2 := "CREATE TABLE IF NOT EXISTS \"ciphers\" (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,`type`	INTEGER,`revisiondate`	INTEGER,`data`	REAL,`owner`	INTEGER,`folderid`	TEXT,`favorite`	INTEGER NOT NULL)"
+	query3 := "CREATE TABLE IF NOT EXISTS \"folders\" (`id`	TEXT,	`name`	TEXT,	`revisiondate`	INTEGER,	`owner`	INTEGER, PRIMARY KEY(id))"
 	stmt1, err := db.db.Prepare(query1)
 	if err != nil {
 		return err
