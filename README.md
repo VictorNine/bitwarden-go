@@ -12,7 +12,7 @@ A server compatible with the Bitwarden apps and plugins. The server has a small 
 
 For more information on the protocol you can read the [documentation](https://github.com/jcs/bitwarden-ruby/blob/master/API.md) provided by [jcs](https://github.com/jcs)
 
-<span style="color:red">The new 2fa implementation requires a database change!</span>
+**The new 2fa implementation requires a database change!**
 
 ### Usage
 #### Fetching the code
