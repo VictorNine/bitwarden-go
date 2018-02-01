@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,6 +41,7 @@ type database interface {
 	AddAccount(acc bw.Account) error
 	GetAccount(username string, refreshtoken string) (bw.Account, error)
 	UpdateAccountInfo(acc bw.Account) error
+	Update2FAsecret(secret string, email string) error
 }
 
 func reHashPassword(key, salt string) (string, error) {
@@ -158,21 +160,20 @@ func (auth *Auth) HandleLogin(w http.ResponseWriter, req *http.Request) {
 
 		log.Println(username + " is trying to login")
 
-		acc, err = auth.db.GetAccount(username, "")
+		acc, err = checkPassword(auth.db, username, passwordHash)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(http.StatusText(401)))
-			log.Println("Account not found")
+			log.Println(err)
 			return
 		}
 
-		reHash, _ := reHashPassword(passwordHash, acc.Email)
-
-		if acc.MasterPasswordHash != reHash {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(http.StatusText(401)))
-			log.Println("Login attempt failed")
-			return
+		// Check 2FA
+		if len(acc.TwoFactorSecret) > 0 {
+			err := check2FA(w, req, acc.TwoFactorSecret)
+			if err != nil {
+				return
+			}
 		}
 	}
 
@@ -281,4 +282,19 @@ func (auth *Auth) JwtMiddleware(next http.Handler) http.Handler {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(http.StatusText(401)))
 	})
+}
+
+func checkPassword(db database, username, passwordHash string) (bw.Account, error) {
+	acc, err := db.GetAccount(username, "")
+	if err != nil {
+		return bw.Account{}, err
+	}
+
+	reHash, _ := reHashPassword(passwordHash, acc.Email)
+
+	if acc.MasterPasswordHash != reHash {
+		return bw.Account{}, errors.New("Login attempt failed")
+	}
+
+	return acc, nil
 }

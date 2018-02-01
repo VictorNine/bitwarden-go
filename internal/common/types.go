@@ -19,17 +19,17 @@ type Account struct {
 	Key                string  `json:"key"`
 	KeyPair            KeyPair `json:"keys"`
 	RefreshToken       string  `json:"-"`
+	TwoFactorSecret    string  `json:"-"`
 }
 
 func (acc Account) GetProfile() Profile {
-	return Profile{
+	p := Profile{
 		Id:                 acc.Id,
 		Name:               nil,
 		Email:              acc.Email,
 		EmailVerified:      false,
 		Premium:            false,
 		Culture:            "en-US",
-		TwoFactorEnabled:   false,
 		Key:                acc.Key,
 		SecurityStamp:      nil,
 		Organizations:      make([]string, 0),
@@ -37,6 +37,12 @@ func (acc Account) GetProfile() Profile {
 		PrivateKey:         acc.KeyPair.EncryptedPrivateKey,
 		Object:             "profile",
 	}
+
+	if len(acc.TwoFactorSecret) > 0 {
+		p.TwoFactorEnabled = true
+	}
+
+	return p
 }
 
 // The data we store and send to the client

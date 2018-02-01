@@ -7,9 +7,10 @@ import (
 
 // mock database used for testing
 type MockDB struct {
-	Username     string
-	Password     string
-	RefreshToken string
+	Username        string
+	Password        string
+	RefreshToken    string
+	TwoFactorSecret string
 }
 
 func (db *MockDB) Init() error {
@@ -56,7 +57,7 @@ func (db *MockDB) AddAccount(acc bw.Account) error {
 }
 
 func (db *MockDB) GetAccount(username string, refreshtoken string) (bw.Account, error) {
-	return bw.Account{Email: db.Username, MasterPasswordHash: db.Password, RefreshToken: db.RefreshToken}, nil
+	return bw.Account{Email: db.Username, MasterPasswordHash: db.Password, RefreshToken: db.RefreshToken, TwoFactorSecret: db.TwoFactorSecret}, nil
 }
 
 func (db *MockDB) AddFolder(name string, owner string) (bw.Folder, error) {
@@ -65,4 +66,8 @@ func (db *MockDB) AddFolder(name string, owner string) (bw.Folder, error) {
 
 func (db *MockDB) GetFolders(owner string) ([]bw.Folder, error) {
 	return nil, nil
+}
+
+func (db *MockDB) Update2FAsecret(secret string, email string) error {
+	return nil
 }

@@ -19,9 +19,10 @@ type DB struct {
 }
 
 func (db *DB) Init() error {
-	query1 := "CREATE TABLE IF NOT EXISTS \"accounts\" (`id`	INTEGER,`name`	TEXT,`email`	TEXT UNIQUE,`masterPasswordHash`	NUMERIC,`masterPasswordHint`	TEXT,`key`	TEXT,`refreshtoken`	TEXT,`privatekey`	TEXT NOT NULL,`pubkey`	TEXT NOT NULL,PRIMARY KEY(id))"
+	query1 := "CREATE TABLE IF NOT EXISTS \"accounts\" (`id`	INTEGER,`name`	TEXT,`email`	TEXT UNIQUE,`masterPasswordHash`	NUMERIC,`masterPasswordHint`	TEXT,`key`	TEXT,`refreshtoken`	TEXT,`privatekey`	TEXT NOT NULL,`pubkey`	TEXT NOT NULL,`tfasecret`	TEXT NOT NULL,PRIMARY KEY(id))"
 	query2 := "CREATE TABLE IF NOT EXISTS \"ciphers\" (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,`type`	INTEGER,`revisiondate`	INTEGER,`data`	REAL,`owner`	INTEGER,`folderid`	TEXT,`favorite`	INTEGER NOT NULL)"
 	query3 := "CREATE TABLE IF NOT EXISTS \"folders\" (`id`	TEXT,	`name`	TEXT,	`revisiondate`	INTEGER,	`owner`	INTEGER, PRIMARY KEY(id))"
+
 	stmt1, err := db.db.Prepare(query1)
 	if err != nil {
 		return err
@@ -241,12 +242,12 @@ func (db *DB) DeleteCipher(owner string, ciphID string) error {
 }
 
 func (db *DB) AddAccount(acc bw.Account) error {
-	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key, refreshtoken, privatekey, pubkey) values(?,?,?,?,?,?,?,?)")
+	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key, refreshtoken, privatekey, pubkey, tfasecret) values(?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key, "", "", "")
+	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key, "", "", "", "")
 	if err != nil {
 		return err
 	}
@@ -288,7 +289,7 @@ func (db *DB) GetAccount(username string, refreshtoken string) (bw.Account, erro
 	}
 
 	var iid int
-	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key, &acc.RefreshToken, &acc.KeyPair.EncryptedPrivateKey, &acc.KeyPair.PublicKey)
+	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key, &acc.RefreshToken, &acc.KeyPair.EncryptedPrivateKey, &acc.KeyPair.PublicKey, &acc.TwoFactorSecret)
 	if err != nil {
 		return acc, err
 	}
@@ -377,4 +378,18 @@ func (db *DB) GetFolders(owner string) ([]bw.Folder, error) {
 		folders = make([]bw.Folder, 0) // Make an empty slice if there are none or android app will crash
 	}
 	return folders, err
+}
+
+func (db *DB) Update2FAsecret(secret string, email string) error {
+	stmt, err := db.db.Prepare("UPDATE accounts SET tfasecret=$1 WHERE email=$2")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(secret, email)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
