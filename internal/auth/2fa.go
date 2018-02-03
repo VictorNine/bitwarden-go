@@ -18,6 +18,12 @@ type tfaObject struct {
 	Object  string
 }
 
+type tfaObjectType struct {
+	Enabled bool
+	Type    int
+	Object  string
+}
+
 func check2FA(w http.ResponseWriter, req *http.Request, secret string) error {
 	code, ok := req.PostForm["twoFactorToken"]
 	if !ok {
@@ -89,7 +95,7 @@ func (auth *Auth) GetAuthenticator(w http.ResponseWriter, req *http.Request) {
 	secret := base32.StdEncoding.EncodeToString(random)
 
 	authData := tfaObject{
-		Enabled: false,
+		Enabled: acc.GetProfile().TwoFactorEnabled,
 		Key:     secret,
 		Object:  "twoFactorAuthenticator",
 	}
@@ -170,4 +176,93 @@ func (auth *Auth) VerifyAuthenticatorSecret(w http.ResponseWriter, req *http.Req
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+func (auth *Auth) HandleTwoFactor(w http.ResponseWriter, req *http.Request) {
+	email := GetEmail(req)
+
+	acc, err := auth.db.GetAccount(email, "")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+		log.Println(err)
+		return
+	}
+
+	tfadata := struct {
+		Data              []tfaObjectType
+		ContinuationToken *string
+		Object            string
+	}{
+		ContinuationToken: nil,
+		Object:            "list",
+	}
+	tfadata.Data = []tfaObjectType{tfaObjectType{
+		Enabled: acc.GetProfile().TwoFactorEnabled,
+		Type:    0,
+		Object:  "twoFactorProvider",
+	}}
+
+	data, err := json.Marshal(&tfadata)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+		log.Println(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func (auth *Auth) HandleDisableTwoFactor(w http.ResponseWriter, req *http.Request) {
+	email := GetEmail(req)
+
+	decoder := json.NewDecoder(req.Body)
+	var reqData struct {
+		Type               int    `json:"type"`
+		MasterPasswordHash string `json:"masterPasswordHash"`
+	}
+	err := decoder.Decode(&reqData)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+		log.Println(err)
+		return
+	}
+	defer req.Body.Close()
+
+	_, err = checkPassword(auth.db, email, reqData.MasterPasswordHash)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(http.StatusText(401)))
+		log.Println(err)
+		return
+	}
+
+	err = auth.db.Update2FAsecret("", email)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(500)))
+		log.Println(err)
+		return
+	}
+
+	tfaData := tfaObjectType{
+		Enabled: false,
+		Type:    0,
+		Object:  "twoFactorProvider",
+	}
+
+	data, err := json.Marshal(&tfaData)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+		log.Println(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+
 }
