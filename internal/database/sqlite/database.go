@@ -11,6 +11,7 @@ import (
 	bw "github.com/VictorNine/bitwarden-go/internal/common"
 	_ "github.com/mattn/go-sqlite3"
 	uuid "github.com/satori/go.uuid"
+	"errors"
 )
 
 type DB struct {
@@ -18,41 +19,49 @@ type DB struct {
 	dir string
 }
 
+const acctTbl = `
+CREATE TABLE IF NOT EXISTS "accounts" (
+  id                  INTEGER,
+  name                TEXT,
+  email               TEXT UNIQUE,
+  masterPasswordHash  NUMERIC,
+  masterPasswordHint  TEXT,
+  key                 TEXT,
+  refreshtoken        TEXT,
+  privatekey          TEXT NOT NULL,
+  pubkey              TEXT NOT NULL,
+  tfasecret           TEXT NOT NULL,
+PRIMARY KEY(id)
+)`
+
+const ciphersTbl = `
+CREATE TABLE IF NOT EXISTS "ciphers" (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  type         INT,
+  revisiondate INT,
+  data         REAL,
+  OWNER        INT,
+  folderid     TEXT,
+  favorite     INT NOT NULL
+)
+`
+const foldersTbl = `
+CREATE TABLE IF NOT EXISTS "folders" (
+  id           TEXT,
+  name         TEXT,
+  revisiondate INTEGER,
+  owner        INTEGER,
+PRIMARY KEY(id)
+)
+`
+
 func (db *DB) Init() error {
-	query1 := "CREATE TABLE IF NOT EXISTS \"accounts\" (`id`	INTEGER,`name`	TEXT,`email`	TEXT UNIQUE,`masterPasswordHash`	NUMERIC,`masterPasswordHint`	TEXT,`key`	TEXT,`refreshtoken`	TEXT,`privatekey`	TEXT NOT NULL,`pubkey`	TEXT NOT NULL,`tfasecret`	TEXT NOT NULL,PRIMARY KEY(id))"
-	query2 := "CREATE TABLE IF NOT EXISTS \"ciphers\" (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,`type`	INTEGER,`revisiondate`	INTEGER,`data`	REAL,`owner`	INTEGER,`folderid`	TEXT,`favorite`	INTEGER NOT NULL)"
-	query3 := "CREATE TABLE IF NOT EXISTS \"folders\" (`id`	TEXT,	`name`	TEXT,	`revisiondate`	INTEGER,	`owner`	INTEGER, PRIMARY KEY(id))"
-
-	stmt1, err := db.db.Prepare(query1)
-	if err != nil {
-		return err
+	for _, sql := range []string{acctTbl, ciphersTbl, foldersTbl} {
+		if _, err := db.db.Exec(sql) ; err != nil {
+			return errors.New(fmt.Sprintf("SQL error with %s\n%s", sql, err.Error()))
+		}
 	}
-
-	_, err = stmt1.Exec()
-	if err != nil {
-		return err
-	}
-
-	stmt2, err := db.db.Prepare(query2)
-	if err != nil {
-		return err
-	}
-
-	_, err = stmt2.Exec()
-	if err != nil {
-		return err
-	}
-
-	stmt3, err := db.db.Prepare(query3)
-	if err != nil {
-		return err
-	}
-
-	_, err = stmt3.Exec()
-	if err != nil {
-		return err
-	}
-	return err
+	return nil
 }
 
 func (db *DB) SetDir(d string) {
