@@ -59,8 +59,8 @@ func check2FA(w http.ResponseWriter, req *http.Request, secret string) error {
 
 	authenticated, err := otpc.Authenticate(code[0])
 	if err != nil || !authenticated {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(http.StatusText(401)))
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(http.StatusText(400)))
 		return errors.New("Could not authenticat")
 	}
 
@@ -146,8 +146,8 @@ func (auth *Auth) VerifyAuthenticatorSecret(w http.ResponseWriter, req *http.Req
 
 	authenticated, err := otpc.Authenticate(reqData.Token)
 	if err != nil || !authenticated {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(http.StatusText(401)))
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(http.StatusText(400)))
 		log.Println(err)
 		return
 	}
