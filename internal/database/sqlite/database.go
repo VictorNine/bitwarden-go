@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 	bw "github.com/VictorNine/bitwarden-go/internal/common"
 	_ "github.com/mattn/go-sqlite3"
 	uuid "github.com/satori/go.uuid"
-	"errors"
 )
 
 type DB struct {
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS "ciphers" (
   type         INT,
   revisiondate INT,
   data         REAL,
-  OWNER        INT,
+  owner        INT,
   folderid     TEXT,
   favorite     INT NOT NULL
 )
@@ -57,7 +57,7 @@ PRIMARY KEY(id)
 
 func (db *DB) Init() error {
 	for _, sql := range []string{acctTbl, ciphersTbl, foldersTbl} {
-		if _, err := db.db.Exec(sql) ; err != nil {
+		if _, err := db.db.Exec(sql); err != nil {
 			return errors.New(fmt.Sprintf("SQL error with %s\n%s", sql, err.Error()))
 		}
 	}
@@ -169,7 +169,7 @@ func (db *DB) NewCipher(ciph bw.Cipher, owner string) (bw.Cipher, error) {
 
 	ciph.RevisionDate = time.Now()
 
-	stmt, err := db.db.Prepare("INSERT INTO ciphers(type, revisiondate, data, owner, favorite) values(?,?,?, ?, ?)")
+	stmt, err := db.db.Prepare("INSERT INTO ciphers(type, revisiondate, data, owner,folderid, favorite) values(?,?,?, ?, ?, ?)")
 	if err != nil {
 		return ciph, err
 	}
@@ -179,7 +179,7 @@ func (db *DB) NewCipher(ciph bw.Cipher, owner string) (bw.Cipher, error) {
 		return ciph, err
 	}
 
-	res, err := stmt.Exec(ciph.Type, ciph.RevisionDate.Unix(), data, iowner, 0)
+	res, err := stmt.Exec(ciph.Type, ciph.RevisionDate.Unix(), data, iowner, ciph.FolderId, 0)
 	if err != nil {
 		return ciph, err
 	}
