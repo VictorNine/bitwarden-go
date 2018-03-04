@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"path"
 	"strconv"
 	"time"
 
-	bw "github.com/VictorNine/bitwarden-go/internal/common"
 	_ "github.com/mattn/go-sqlite3"
 	uuid "github.com/satori/go.uuid"
+	bw "gitlab.com/Odysseus16/bitwarden-go/internal/common"
 )
 
 type DB struct {
@@ -42,6 +43,7 @@ CREATE TABLE IF NOT EXISTS "ciphers" (
   data         REAL,
   owner        INT,
   folderid     TEXT,
+	attachments	 REAL,
   favorite     INT NOT NULL
 )
 `
@@ -90,15 +92,16 @@ func sqlRowToCipher(row interface {
 		Edit:                true,
 		OrganizationUseTotp: false,
 		Object:              "cipher",
-		Attachments:         nil,
-		FolderId:            nil,
+		//Attachments:         nil,
+		FolderId: nil,
 	}
 
 	var iid, favorite int
 	var revDate int64
 	var blob []byte
+	var blob2 []byte
 	var folderid sql.NullString
-	err := row.Scan(&iid, &ciph.Type, &revDate, &blob, &folderid, &favorite)
+	err := row.Scan(&iid, &ciph.Type, &revDate, &blob, &folderid, &blob2, &favorite)
 	if err != nil {
 		return ciph, err
 	}
@@ -106,6 +109,18 @@ func sqlRowToCipher(row interface {
 	err = json.Unmarshal(blob, &ciph.Data)
 	if err != nil {
 		return ciph, err
+	}
+	if len(blob2) > 0 {
+		log.Println("1")
+		log.Println(blob2)
+		err = json.Unmarshal(blob2, &ciph.Attachments)
+		if err != nil {
+			log.Println("3")
+			log.Println(err)
+			return ciph, err
+		}
+	} else {
+		ciph.Attachments = nil
 	}
 
 	if favorite == 1 {
@@ -130,7 +145,7 @@ func (db *DB) GetCipher(owner string, ciphID string) (bw.Cipher, error) {
 		return bw.Cipher{}, err
 	}
 
-	query := "SELECT id, type, revisiondate, data, folderid, favorite FROM ciphers WHERE owner = $1 AND id = $2"
+	query := "SELECT id, type, revisiondate, data, folderid, attachments, favorite FROM ciphers WHERE owner = $1 AND id = $2"
 	row := db.db.QueryRow(query, iowner, iciphID)
 
 	return sqlRowToCipher(row)
@@ -140,15 +155,17 @@ func (db *DB) GetCiphers(owner string) ([]bw.Cipher, error) {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
 		return nil, err
+
 	}
 
 	var ciphers []bw.Cipher
-	query := "SELECT id, type, revisiondate, data, folderid, favorite FROM ciphers WHERE owner = $1"
+	query := "SELECT id, type, revisiondate, data, folderid, attachments, favorite FROM ciphers WHERE owner = $1"
 	rows, err := db.db.Query(query, iowner)
 
 	for rows.Next() {
 		ciph, err := sqlRowToCipher(rows)
 		if err != nil {
+			log.Println("2")
 			return nil, err
 		}
 
@@ -166,10 +183,9 @@ func (db *DB) NewCipher(ciph bw.Cipher, owner string) (bw.Cipher, error) {
 	if err != nil {
 		return bw.Cipher{}, err
 	}
-
 	ciph.RevisionDate = time.Now()
 
-	stmt, err := db.db.Prepare("INSERT INTO ciphers(type, revisiondate, data, owner,folderid, favorite) values(?,?,?, ?, ?, ?)")
+	stmt, err := db.db.Prepare("INSERT INTO ciphers(type, revisiondate, data, owner,folderid, attachments, favorite) values(?,?,?, ?, ?,?, ?)")
 	if err != nil {
 		return ciph, err
 	}
@@ -179,8 +195,13 @@ func (db *DB) NewCipher(ciph bw.Cipher, owner string) (bw.Cipher, error) {
 		return ciph, err
 	}
 
-	res, err := stmt.Exec(ciph.Type, ciph.RevisionDate.Unix(), data, iowner, ciph.FolderId, 0)
+	attachments, err := ciph.Attachments.Bytes()
 	if err != nil {
+		return ciph, err
+	}
+	res, err := stmt.Exec(ciph.Type, ciph.RevisionDate.Unix(), data, iowner, attachments, ciph.FolderId, 0)
+	if err != nil {
+		log.Println(err)
 		return ciph, err
 	}
 
@@ -208,7 +229,7 @@ func (db *DB) UpdateCipher(newData bw.Cipher, owner string, ciphID string) error
 		favorite = 1
 	}
 
-	stmt, err := db.db.Prepare("UPDATE ciphers SET type=$1, revisiondate=$2, data=$3, folderid=$4, favorite=$5 WHERE id=$6 AND owner=$7")
+	stmt, err := db.db.Prepare("UPDATE ciphers SET type=$1, revisiondate=$2, data=$3, folderid=$4, attachments=$5, favorite=$6 WHERE id=$7 AND owner=$8")
 	if err != nil {
 		return err
 	}
@@ -217,8 +238,12 @@ func (db *DB) UpdateCipher(newData bw.Cipher, owner string, ciphID string) error
 	if err != nil {
 		return err
 	}
+	adata, err := newData.Attachments.Bytes()
+	if err != nil {
+		return err
+	}
 
-	_, err = stmt.Exec(newData.Type, time.Now().Unix(), bdata, newData.FolderId, favorite, iciphID, iowner)
+	_, err = stmt.Exec(newData.Type, time.Now().Unix(), bdata, newData.FolderId, adata, favorite, iciphID, iowner)
 	if err != nil {
 		return err
 	}

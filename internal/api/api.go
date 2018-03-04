@@ -1,15 +1,20 @@
 package api
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/VictorNine/bitwarden-go/internal/auth"
-	bw "github.com/VictorNine/bitwarden-go/internal/common"
+	"gitlab.com/Odysseus16/bitwarden-go/internal/auth"
+	bw "gitlab.com/Odysseus16/bitwarden-go/internal/common"
 )
 
 type APIHandler struct {
@@ -91,6 +96,18 @@ func (h *APIHandler) HandleCollections(w http.ResponseWriter, req *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
+func HandleAttachments(w http.ResponseWriter, req *http.Request) {
+
+	path := strings.TrimPrefix(req.URL.Path, "/")
+	Openfile, err := os.Open(path)
+	defer Openfile.Close()
+	if err != nil {
+		log.Println(err)
+	}
+	Openfile.Seek(0, 0)
+	w.Header().Set("Content-Type", "application/json")
+	io.Copy(w, Openfile)
+}
 
 func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 	email := auth.GetEmail(req)
@@ -109,7 +126,8 @@ func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			log.Fatal("Cipher decode error" + err.Error())
 		}
-
+		var attachments = bw.Attachments{}
+		rCiph.Attachments = attachments
 		// Store the new cipher object in db
 		newCiph, err := h.db.NewCipher(rCiph, acc.Id)
 		if err != nil {
@@ -138,78 +156,191 @@ func (h *APIHandler) HandleCipher(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
+func GenerateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+func GenerateRandomString(s int) (string, error) {
+	b, err := GenerateRandomBytes(s)
+	return base64.URLEncoding.EncodeToString(b), err
+}
 
 // This function handles updates and deleteing
 func (h *APIHandler) HandleCipherUpdate(w http.ResponseWriter, req *http.Request) {
+	//type Attachments []bw.AttachmentData
+	var attachment bool
 	email := auth.GetEmail(req)
 	log.Println(email + " is trying to edit his data")
 
 	// Get the cipher id
 	id := strings.TrimPrefix(req.URL.Path, "/api/ciphers/")
-
+	attachment = strings.Contains(req.URL.Path, "attachment") //check if attachment is added
 	acc, err := h.db.GetAccount(email, "")
 	if err != nil {
 		log.Fatal("Account lookup " + err.Error())
 	}
-
-	switch req.Method {
-	case "GET":
-		log.Println("GET Ciphers for " + acc.Id)
-		var data []byte
-		ciph, err := h.db.GetCipher(acc.Id, id)
-		if err != nil {
+	switch attachment {
+	case true:
+		id2 := strings.SplitAfter(id, "/")
+		log.Println(id2)
+		id = strings.TrimSuffix(id2[0], "/")
+		log.Println(id)
+		ciph, err2 := h.db.GetCipher(acc.Id, id)
+		if err2 != nil {
 			log.Fatal(err)
 		}
-		data, err = json.Marshal(&ciph)
-		if err != nil {
-			log.Fatal(err)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-	case "POST":
-		fallthrough // Do same as PUT. Web Vault want's to post
-	case "PUT":
-		rCiph, err := unmarshalCipher(req.Body)
-		if err != nil {
-			log.Fatal("Cipher decode error" + err.Error())
-		}
-
-		// Set correct ID
-		rCiph.Id = id
-
-		err = h.db.UpdateCipher(rCiph, acc.Id, id)
-		if err != nil {
+		switch req.Method {
+		case "DELETE":
+			var attachments = bw.Attachments{}
+			ciph2 := bw.Cipher{
+				Type:                ciph.Type,
+				FolderId:            ciph.FolderId,
+				OrganizationId:      ciph.OrganizationId,
+				Favorite:            ciph.Favorite,
+				Id:                  id,
+				Data:                ciph.Data,
+				Attachments:         attachments,
+				OrganizationUseTotp: ciph.OrganizationUseTotp,
+				RevisionDate:        ciph.RevisionDate,
+				Object:              "cipher",
+			}
+			err = h.db.UpdateCipher(ciph2, acc.Id, id)
+			if err != nil {
+				w.Write([]byte("0"))
+				log.Println(err)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte("0"))
-			log.Println(err)
+			log.Println("Attachment deleted")
+		default:
+			file, header, err := req.FormFile("data")
+			if err != nil {
+				log.Println("[-] Error in req.FormFile ", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprintf(w, "{'error': %s}", err)
+				return
+			}
+			defer file.Close()
+			token, err1 := GenerateRandomString(15)
+			if err1 != nil {
+			}
+			log.Println(token)
+			log.Println(header.Filename)
+			//String value: http://localhost:4567/attachments/4f3e0842-210c-4549-b7fc-4986ffd7d031/ece4f584289eec7f13d74f41498dd8b5
+			os.MkdirAll("./attachments/"+id, os.ModePerm)
+			f, err3 := os.OpenFile("./attachments/"+id+"/"+token, os.O_WRONLY|os.O_CREATE, 0666)
+			if err3 != nil {
+				fmt.Println(err)
+				return
+			}
+			defer f.Close()
+			io.Copy(f, file)
+			attach := bw.AttachmentData{
+				Id:       token,
+				Url:      "http://localhost:8000/attachments/" + id + "/" + token,
+				FileName: header.Filename,
+				Size:     header.Size,
+				SizeName: strconv.FormatInt(header.Size, 10) + " Bytes",
+				Object:   "attachment",
+			}
+			var attachments = bw.Attachments{
+				attach,
+			}
+			chip2 := bw.Cipher{
+				Type:                ciph.Type,
+				FolderId:            ciph.FolderId,
+				OrganizationId:      ciph.OrganizationId,
+				Favorite:            ciph.Favorite,
+				Id:                  id,
+				Data:                ciph.Data,
+				Attachments:         attachments,
+				OrganizationUseTotp: ciph.OrganizationUseTotp,
+				RevisionDate:        ciph.RevisionDate,
+				Object:              "cipher",
+			}
+			data, err := json.Marshal(&chip2)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = h.db.UpdateCipher(chip2, acc.Id, id)
+			if err != nil {
+				w.Write([]byte("0"))
+				log.Println(err)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(data)
+		}
+	case false:
+		switch req.Method {
+		case "GET":
+			log.Println("GET Ciphers for " + acc.Id)
+			var data []byte
+			ciph, err := h.db.GetCipher(acc.Id, id)
+			if err != nil {
+				log.Fatal(err)
+			}
+			data, err = json.Marshal(&ciph)
+			if err != nil {
+				log.Fatal(err)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(data)
+		case "POST":
+			fallthrough // Do same as PUT. Web Vault want's to post
+		case "PUT":
+			rCiph, err := unmarshalCipher(req.Body)
+			if err != nil {
+				log.Fatal("Cipher decode error" + err.Error())
+			}
+
+			// Set correct ID
+			rCiph.Id = id
+			/**err = h.db.UpdateCipher(rCiph, acc.Id, id)
+			if err != nil {
+				w.Write([]byte("0"))
+				log.Println(err)
+				return
+			}**/
+			ciph3, err := h.db.GetCipher(acc.Id, id)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// Send response
+			data, err := json.Marshal(&ciph3)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(data)
+			log.Println("Cipher " + id + " updated")
+			return
+
+		case "DELETE":
+			err := h.db.DeleteCipher(acc.Id, id)
+			if err != nil {
+				w.Write([]byte("0"))
+				log.Println(err)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(""))
+			log.Println("Cipher " + id + " deleted")
+			return
+		default:
+			w.Write([]byte("0"))
 			return
 		}
-
-		// Send response
-		data, err := json.Marshal(&rCiph)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(data)
-		log.Println("Cipher " + id + " updated")
-		return
-
-	case "DELETE":
-		err := h.db.DeleteCipher(acc.Id, id)
-		if err != nil {
-			w.Write([]byte("0"))
-			log.Println(err)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(""))
-		log.Println("Cipher " + id + " deleted")
-		return
 	default:
-		w.Write([]byte("0"))
-		return
 	}
 
 }
@@ -224,8 +355,8 @@ func (h *APIHandler) HandleSync(w http.ResponseWriter, req *http.Request) {
 	prof := bw.Profile{
 		Id:               acc.Id,
 		Email:            acc.Email,
-		EmailVerified:    false,
-		Premium:          false,
+		EmailVerified:    true,
+		Premium:          true,
 		Culture:          "en-US",
 		TwoFactorEnabled: false,
 		Key:              acc.Key,
@@ -494,3 +625,6 @@ func unmarshalCipher(data io.ReadCloser) (bw.Cipher, error) {
 
 	return nciph.toCipher()
 }
+
+//87f11661-f334-4043-af8a-a884017f0a11
+//7dce1c01-110e-11e8-9445-a0999b1c5a79

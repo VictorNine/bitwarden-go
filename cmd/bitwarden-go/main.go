@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/VictorNine/bitwarden-go/internal/api"
-	"github.com/VictorNine/bitwarden-go/internal/auth"
-	"github.com/VictorNine/bitwarden-go/internal/common"
-	"github.com/VictorNine/bitwarden-go/internal/database/sqlite"
+	"gitlab.com/Odysseus16/bitwarden-go/internal/api"
+	"gitlab.com/Odysseus16/bitwarden-go/internal/auth"
+	"gitlab.com/Odysseus16/bitwarden-go/internal/common"
+	"gitlab.com/Odysseus16/bitwarden-go/internal/database/sqlite"
 )
 
 var cfg struct {
@@ -74,6 +74,7 @@ func main() {
 	mux.Handle("/api/ciphers/import", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleImport)))
 	mux.Handle("/api/ciphers", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipher)))
 	mux.Handle("/api/ciphers/", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipherUpdate)))
+	mux.HandleFunc("/attachments/", api.HandleAttachments)
 
 	if len(cfg.vaultURL) > 4 {
 		proxy := common.Proxy{VaultURL: cfg.vaultURL}
