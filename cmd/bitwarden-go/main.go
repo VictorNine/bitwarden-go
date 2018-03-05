@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"gitlab.com/Odysseus16/bitwarden-go/internal/api"
-	"gitlab.com/Odysseus16/bitwarden-go/internal/auth"
-	"gitlab.com/Odysseus16/bitwarden-go/internal/common"
-	"gitlab.com/Odysseus16/bitwarden-go/internal/database/sqlite"
+	"github.com/VictorNine/bitwarden-go/internal/api"
+	"github.com/VictorNine/bitwarden-go/internal/auth"
+	"github.com/VictorNine/bitwarden-go/internal/common"
+	"github.com/VictorNine/bitwarden-go/internal/database/sqlite"
 )
 
 var cfg struct {
