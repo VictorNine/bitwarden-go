@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/dgryski/dgoogauth"
-	bw "gitlab.com/Odysseus16/bitwarden-go/internal/common"
+	bw "github.com/VictorNine/bitwarden-go/internal/common"
 )
 
 type tfaObject struct {
