@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.com/Odysseus16/bitwarden-go/internal/auth"
-	bw "gitlab.com/Odysseus16/bitwarden-go/internal/common"
+	"github.com/VictorNine/bitwarden-go/internal/auth"
+	bw "github.com/VictorNine/bitwarden-go/internal/common"
 )
 
 type APIHandler struct {
