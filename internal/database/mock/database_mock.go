@@ -2,7 +2,7 @@ package mock
 
 import (
 	_ "github.com/mattn/go-sqlite3"
-	bw "gitlab.com/Odysseus16/bitwarden-go/internal/common"
+	bw "github.com/VictorNine/bitwarden-go/internal/common"
 )
 
 // mock database used for testing
