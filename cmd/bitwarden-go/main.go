@@ -74,6 +74,7 @@ func main() {
 	mux.Handle("/api/ciphers/import", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleImport)))
 	mux.Handle("/api/ciphers", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipher)))
 	mux.Handle("/api/ciphers/", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleCipherUpdate)))
+	mux.HandleFunc("/attachments/", api.HandleAttachments)
 
 	if len(cfg.vaultURL) > 4 {
 		proxy := common.Proxy{VaultURL: cfg.vaultURL}
