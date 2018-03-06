@@ -12,7 +12,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	uuid "github.com/satori/go.uuid"
-	bw "gitlab.com/Odysseus16/bitwarden-go/internal/common"
+	bw "github.com/VictorNine/bitwarden-go/internal/common"
 )
 
 type DB struct {
