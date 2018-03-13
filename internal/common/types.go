@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type Attachments []AttachmentData
+
 type KeyPair struct {
 	EncryptedPrivateKey string `json:"encryptedPrivateKey"`
 	PublicKey           string `json:"publicKey"`
@@ -54,11 +56,25 @@ type Cipher struct {
 	Edit                bool
 	Id                  string
 	Data                CipherData
-	Attachments         []string
+	Attachments         Attachments
 	OrganizationUseTotp bool
 	RevisionDate        time.Time
 	Object              string
 	CollectionIds       []string
+}
+
+type AttachmentData struct {
+	Id       string
+	Url      string
+	FileName string
+	Size     int64
+	SizeName string
+	Object   string
+}
+
+func (attachments *Attachments) Bytes() ([]byte, error) {
+	b, err := json.Marshal(attachments)
+	return b, err
 }
 
 type CipherData struct {
