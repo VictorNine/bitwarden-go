@@ -624,6 +624,3 @@ func unmarshalCipher(data io.ReadCloser) (bw.Cipher, error) {
 
 	return nciph.toCipher()
 }
-
-//87f11661-f334-4043-af8a-a884017f0a11
-//7dce1c01-110e-11e8-9445-a0999b1c5a79
