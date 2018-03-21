@@ -8,11 +8,12 @@ project nor 8bit Solutions LLC.)*
 [![Build Status](https://travis-ci.org/VictorNine/bitwarden-go.svg?branch=master)](https://travis-ci.org/VictorNine/bitwarden-go)
 [![Gitter chat](https://badges.gitter.im//bitwarden-go/Lobby.png)](https://gitter.im/bitwarden-go/Lobby "Gitter chat")
 
+
 A server compatible with the Bitwarden apps and plugins. The server has a small footprint and could be run locally on your computer, a Raspberry Pi or a small VPS. The data is stored in a local SQLite database.
 
 For more information on the protocol you can read the [documentation](https://github.com/jcs/bitwarden-ruby/blob/master/API.md) provided by [jcs](https://github.com/jcs)
 
-**The new 2fa implementation requires a database change!**
+**Not compatible with latest API! Fix comming soon**
 
 ### Usage
 #### Fetching the code
