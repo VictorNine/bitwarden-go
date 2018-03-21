@@ -117,6 +117,37 @@ func sqlRowToCipher(row interface {
 	if folderid.Valid {
 		ciph.FolderId = &folderid.String
 	}
+
+	// TODO: Revrite this when the data field is removed
+	ciph.Card = nil // TODO: Implement
+	ciph.Fields = nil
+	ciph.Identity = nil // TODO: Implement
+	ciph.Name = ciph.Data.Name
+
+	if ciph.Data.Uri != nil {
+		ciph.Data.Uris = []bw.Uri{bw.Uri{
+			Uri:   ciph.Data.Uri,
+			Match: nil,
+		}}
+	}
+
+	if ciph.Data.Username != nil {
+		ciph.Login = bw.Login{
+			Username: ciph.Data.Username,
+			Totp:     ciph.Data.Totp,
+			Uri:      ciph.Data.Uri,
+			Uris:     ciph.Data.Uris,
+			Password: ciph.Data.Password,
+		}
+	}
+
+	ciph.Notes = ciph.Data.Notes
+	if ciph.Notes != nil {
+		ciph.SecureNote = bw.SecureNote{
+			Type: 0,
+		}
+	}
+
 	return ciph, nil
 }
 
