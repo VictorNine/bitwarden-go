@@ -428,10 +428,11 @@ type newCipher struct {
 }
 
 type loginData struct {
-	URI      string `json:"uri"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	ToTp     string `json:"totp"`
+	URI      string   `json:"uri"`
+	Username string   `json:"username"`
+	Password string   `json:"password"`
+	ToTp     string   `json:"totp"`
+	Uris     []bw.Uri `json:"uris"`
 }
 
 func (nciph *newCipher) toCipher() (bw.Cipher, error) {
@@ -454,6 +455,12 @@ func (nciph *newCipher) toCipher() (bw.Cipher, error) {
 
 	if *cdata.Uri == "" {
 		cdata.Uri = nil
+	}
+
+	if cdata.Uri == nil {
+		if len(nciph.Login.Uris) > 0 { // TODO: Also add to Uris
+			cdata.Uri = nciph.Login.Uris[0].Uri
+		}
 	}
 
 	if *cdata.Username == "" {
