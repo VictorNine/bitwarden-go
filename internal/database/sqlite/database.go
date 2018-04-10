@@ -118,42 +118,9 @@ func sqlRowToCipher(row interface {
 		ciph.FolderId = &folderid.String
 	}
 
-	fakeNewAPI(&ciph)
+	bw.FakeNewAPI(&ciph)
 
 	return ciph, nil
-}
-
-// Copy from data to new fields
-func fakeNewAPI(ciph *bw.Cipher) {
-	// TODO: Revrite this when the data field is removed
-	ciph.Card = nil // TODO: Implement
-	ciph.Fields = nil
-	ciph.Identity = nil // TODO: Implement
-	ciph.Name = ciph.Data.Name
-
-	if ciph.Data.Uri != nil {
-		ciph.Data.Uris = []bw.Uri{bw.Uri{
-			Uri:   ciph.Data.Uri,
-			Match: nil,
-		}}
-	}
-
-	if ciph.Data.Username != nil {
-		ciph.Login = bw.Login{
-			Username: ciph.Data.Username,
-			Totp:     ciph.Data.Totp,
-			Uri:      ciph.Data.Uri,
-			Uris:     ciph.Data.Uris,
-			Password: ciph.Data.Password,
-		}
-	}
-
-	ciph.Notes = ciph.Data.Notes
-	if ciph.Notes != nil {
-		ciph.SecureNote = bw.SecureNote{
-			Type: 0,
-		}
-	}
 }
 
 func (db *DB) GetCipher(owner string, ciphID string) (bw.Cipher, error) {
@@ -223,7 +190,7 @@ func (db *DB) NewCipher(ciph bw.Cipher, owner string) (bw.Cipher, error) {
 	lID, err := res.LastInsertId()
 	ciph.Id = fmt.Sprintf("%v", lID)
 
-	fakeNewAPI(&ciph)
+	bw.FakeNewAPI(&ciph)
 
 	return ciph, nil
 

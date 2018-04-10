@@ -82,7 +82,7 @@ type CipherData struct {
 
 type Uri struct {
 	Uri   *string
-	Match *string
+	Match *int
 }
 
 type Login struct {
@@ -116,6 +116,40 @@ type Profile struct {
 	SecurityStamp      *string
 	Organizations      []string
 	Object             string
+}
+
+// Copy from data to new fields
+func FakeNewAPI(ciph *Cipher) {
+	// TODO: Rewrite this when the data field is removed
+	ciph.Card = nil // TODO: Implement
+	ciph.Fields = nil
+	ciph.Identity = nil // TODO: Implement
+	ciph.Name = ciph.Data.Name
+
+	// Set ciph.Data.Uris if it's not in the DB
+	if ciph.Data.Uri != nil && ciph.Data.Uris == nil {
+		ciph.Data.Uris = []Uri{Uri{
+			Uri:   ciph.Data.Uri,
+			Match: nil,
+		}}
+	}
+
+	if ciph.Data.Username != nil {
+		ciph.Login = Login{
+			Username: ciph.Data.Username,
+			Totp:     ciph.Data.Totp,
+			Uri:      ciph.Data.Uri,
+			Uris:     ciph.Data.Uris,
+			Password: ciph.Data.Password,
+		}
+	}
+
+	ciph.Notes = ciph.Data.Notes
+	if ciph.Notes != nil {
+		ciph.SecureNote = SecureNote{
+			Type: 0,
+		}
+	}
 }
 
 type SyncData struct {

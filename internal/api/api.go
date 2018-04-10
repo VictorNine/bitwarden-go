@@ -445,6 +445,7 @@ func (nciph *newCipher) toCipher() (bw.Cipher, error) {
 		Name:     &nciph.Name,
 		Notes:    new(string),
 		Fields:   nil,
+		Uris:     nciph.Login.Uris,
 	}
 
 	(*cdata.Notes) = nciph.Notes
@@ -484,6 +485,8 @@ func (nciph *newCipher) toCipher() (bw.Cipher, error) {
 	if nciph.FolderId != "" {
 		ciph.FolderId = &nciph.FolderId
 	}
+
+	bw.FakeNewAPI(&ciph)
 
 	return ciph, nil
 }
