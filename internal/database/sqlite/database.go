@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS "accounts" (
   privatekey          TEXT NOT NULL,
   pubkey              TEXT NOT NULL,
   tfasecret           TEXT NOT NULL,
+  kdf          		 NUMERIC,
+  kdfIterations       NUMERIC,
 PRIMARY KEY(id)
 )`
 
@@ -256,12 +258,12 @@ func (db *DB) DeleteCipher(owner string, ciphID string) error {
 }
 
 func (db *DB) AddAccount(acc bw.Account) error {
-	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key, refreshtoken, privatekey, pubkey, tfasecret) values(?,?,?,?,?,?,?,?,?)")
+	stmt, err := db.db.Prepare("INSERT INTO accounts(name, email, masterPasswordHash, masterPasswordHint, key, refreshtoken, privatekey, pubkey, tfasecret, kdf, kdfIterations) values(?,?,?,?,?,?,?,?,?,?,?)")
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key, "", "", "", "")
+	_, err = stmt.Exec(acc.Name, acc.Email, acc.MasterPasswordHash, acc.MasterPasswordHint, acc.Key, "", "", "", "", acc.Kdf, acc.KdfIterations)
 	if err != nil {
 		return err
 	}
@@ -303,7 +305,7 @@ func (db *DB) GetAccount(username string, refreshtoken string) (bw.Account, erro
 	}
 
 	var iid int
-	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key, &acc.RefreshToken, &acc.KeyPair.EncryptedPrivateKey, &acc.KeyPair.PublicKey, &acc.TwoFactorSecret)
+	err := row.Scan(&iid, &acc.Name, &acc.Email, &acc.MasterPasswordHash, &acc.MasterPasswordHint, &acc.Key, &acc.RefreshToken, &acc.KeyPair.EncryptedPrivateKey, &acc.KeyPair.PublicKey, &acc.TwoFactorSecret, &acc.Kdf, &acc.KdfIterations)
 	if err != nil {
 		return acc, err
 	}

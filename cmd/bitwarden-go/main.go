@@ -62,6 +62,7 @@ func main() {
 		mux.HandleFunc("/api/accounts/register", authHandler.HandleRegister)
 	}
 	mux.HandleFunc("/identity/connect/token", authHandler.HandleLogin)
+	mux.HandleFunc("/api/accounts/prelogin", authHandler.HandlePrelogin)
 
 	mux.Handle("/api/accounts/keys", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleKeysUpdate)))
 	mux.Handle("/api/accounts/profile", authHandler.JwtMiddleware(http.HandlerFunc(apiHandler.HandleProfile)))

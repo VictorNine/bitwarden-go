@@ -20,6 +20,8 @@ type Account struct {
 	KeyPair            KeyPair `json:"keys"`
 	RefreshToken       string  `json:"-"`
 	TwoFactorSecret    string  `json:"-"`
+	Kdf                int     `json:"kdf"`
+	KdfIterations      int     `json:"kdfIterations"`
 }
 
 func (acc Account) GetProfile() Profile {

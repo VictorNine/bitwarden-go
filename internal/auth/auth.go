@@ -44,15 +44,57 @@ type database interface {
 	Update2FAsecret(secret string, email string) error
 }
 
-func reHashPassword(key, salt string) (string, error) {
+func reHashPassword(key, salt string, itr int) (string, error) {
 	b, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
 		return "", err
 	}
 
-	hash := pbkdf2.Key(b, []byte(salt), 5000, 256/8, sha256.New)
+	hash := pbkdf2.Key(b, []byte(salt), itr, 256/8, sha256.New)
 
 	return base64.StdEncoding.EncodeToString(hash), nil
+}
+
+func (auth *Auth) HandlePrelogin(w http.ResponseWriter, req *http.Request) {
+	// Get email
+	decoder := json.NewDecoder(req.Body)
+	var acc bw.Account
+	err := decoder.Decode(&acc)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+		log.Println(err)
+		return
+	}
+	defer req.Body.Close()
+
+	// Get account data from DB
+	acc, err = auth.db.GetAccount(acc.Email, "")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(500)))
+		log.Println(err)
+		return
+	}
+
+	// Return Kdf data
+	itrData := struct {
+		Kdf           int
+		KdfIterations int
+	}{
+		Kdf:           acc.Kdf,
+		KdfIterations: acc.KdfIterations,
+	}
+
+	data, err := json.Marshal(&itrData)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
 }
 
 func (auth *Auth) HandleRegister(w http.ResponseWriter, req *http.Request) {
@@ -69,7 +111,14 @@ func (auth *Auth) HandleRegister(w http.ResponseWriter, req *http.Request) {
 
 	log.Println(acc.Email + " is trying to register")
 
-	acc.MasterPasswordHash, err = reHashPassword(acc.MasterPasswordHash, acc.Email)
+	// Check iterations
+	if acc.KdfIterations < 5000 || acc.KdfIterations > 100000 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+		return
+	}
+
+	acc.MasterPasswordHash, err = reHashPassword(acc.MasterPasswordHash, acc.Email, acc.KdfIterations)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(http.StatusText(500)))
@@ -290,7 +339,7 @@ func checkPassword(db database, username, passwordHash string) (bw.Account, erro
 		return bw.Account{}, err
 	}
 
-	reHash, _ := reHashPassword(passwordHash, acc.Email)
+	reHash, _ := reHashPassword(passwordHash, acc.Email, acc.KdfIterations)
 
 	if acc.MasterPasswordHash != reHash {
 		return bw.Account{}, errors.New("Login attempt failed")

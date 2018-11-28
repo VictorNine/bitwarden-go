@@ -11,6 +11,8 @@ project nor 8bit Solutions LLC.)*
 
 A server compatible with the Bitwarden apps and plugins. The server has a small footprint and could be run locally on your computer, a Raspberry Pi or a small VPS. The data is stored in a local SQLite database.
 
+** If you're using an old database you need to add kdf and kdfIterations to your accounts table **
+
 For more information on the protocol you can read the [documentation](https://github.com/jcs/bitwarden-ruby/blob/master/API.md) provided by [jcs](https://github.com/jcs)
 
 ### Usage

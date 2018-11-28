@@ -11,6 +11,7 @@ type MockDB struct {
 	Password        string
 	RefreshToken    string
 	TwoFactorSecret string
+	KdfIterations   int
 }
 
 func (db *MockDB) Init() error {
@@ -57,7 +58,7 @@ func (db *MockDB) AddAccount(acc bw.Account) error {
 }
 
 func (db *MockDB) GetAccount(username string, refreshtoken string) (bw.Account, error) {
-	return bw.Account{Email: db.Username, MasterPasswordHash: db.Password, RefreshToken: db.RefreshToken, TwoFactorSecret: db.TwoFactorSecret}, nil
+	return bw.Account{Email: db.Username, MasterPasswordHash: db.Password, RefreshToken: db.RefreshToken, TwoFactorSecret: db.TwoFactorSecret, KdfIterations: db.KdfIterations}, nil
 }
 
 func (db *MockDB) AddFolder(name string, owner string) (bw.Folder, error) {
