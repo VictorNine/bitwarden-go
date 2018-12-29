@@ -20,7 +20,7 @@ For more information on the protocol you can read the [documentation](https://gi
 Make sure you have the ```go``` package installed.
 *Note: package name may vary based on distribution*
 
-You can then run ```go get github.com/VictorNine/bitwarden-go``` to fetch the latest code.
+You can then run ```go get github.com/VictorNine/bitwarden-go/cmd/bitwarden-go``` to fetch the latest code.
 
 #### Build/Install
 Run in your favorite terminal:
