@@ -34,6 +34,7 @@ type database interface {
 	UpdateCipher(newData bw.Cipher, owner string, ciphID string) error
 	DeleteCipher(owner string, ciphID string) error
 	AddFolder(name string, owner string) (bw.Folder, error)
+	DeleteFolder(folder string, owner string) error
 	UpdateFolder(newFolder bw.Folder, owner string) error
 	GetFolders(owner string) ([]bw.Folder, error)
 }
@@ -369,6 +370,26 @@ func (h *APIHandler) HandleFolderUpdate(w http.ResponseWriter, req *http.Request
 	}
 
 	switch req.Method {
+	case "DELETE":
+		// Get the folder id
+		folderID := strings.TrimPrefix(req.URL.Path, "/api/folders/")
+
+		// ?
+		defer req.Body.Close()
+
+		// The below should be delete folder?
+		err = h.db.DeleteFolder(folderID, acc.Id)
+		if err != nil {
+			w.Write([]byte("0"))
+			log.Println(err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+                w.Write([]byte(""))
+                log.Println("Folder " + folderID + " deleted")
+		return
+
 	case "POST":
 		fallthrough // Do same as PUT. Web Vault wants to post
 	case "PUT":

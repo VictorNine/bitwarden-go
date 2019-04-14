@@ -346,6 +346,35 @@ func (db *DB) AddFolder(name string, owner string) (bw.Folder, error) {
 	return folder, nil
 }
 
+func (db *DB) DeleteFolder(folder string, owner string) error {
+        iowner, err := strconv.ParseInt(owner, 10, 64)
+        if err != nil {
+                return err
+        }
+
+	// Bitwarden behavior is to delete ciphers in the folder. Mimic this behaviour.
+	stmt, err := db.db.Prepare("DELETE from ciphers WHERE folderid=$1 and owner=$2")
+        if err != nil {
+                return err
+        }
+
+        _, err = stmt.Exec(folder, iowner)
+        if err != nil {
+                return err
+        }
+
+        stmt, err = db.db.Prepare("DELETE from folders WHERE id=$1 and owner=$2")
+        if err != nil {
+                return err
+        }
+
+        _, err = stmt.Exec(folder, iowner)
+        if err != nil {
+                return err
+        }
+        return nil
+}
+
 func (db *DB) UpdateFolder(newFolder bw.Folder, owner string) error {
 	iowner, err := strconv.ParseInt(owner, 10, 64)
 	if err != nil {
