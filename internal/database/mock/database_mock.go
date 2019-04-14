@@ -65,6 +65,10 @@ func (db *MockDB) AddFolder(name string, owner string) (bw.Folder, error) {
 	return bw.Folder{}, nil
 }
 
+func (db *MockDB) DeleteFolder(folder string, owner string) error {
+	return nil, nil
+}
+
 func (db *MockDB) GetFolders(owner string) ([]bw.Folder, error) {
 	return nil, nil
 }
